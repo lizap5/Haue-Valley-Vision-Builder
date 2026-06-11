@@ -6,11 +6,31 @@ import { setBuilderState } from "@/lib/builder-state";
 import StepShell from "@/components/StepShell";
 
 const floralStyles = [
-  { value: "lush_white", label: "Lush and all white", descriptor: "Peonies, ranunculus, garden roses" },
-  { value: "wildflower", label: "Wildflower and organic", descriptor: "Loose, natural, gathered from the field" },
-  { value: "romantic_color", label: "Romantic with color", descriptor: "Blush, burgundy, mauve" },
-  { value: "bold_jewel", label: "Bold jewel tones", descriptor: "Deep plum, terracotta, rich green" },
-  { value: "minimal_greenery", label: "Minimal with lots of greenery", descriptor: "Clean, architectural, modern" },
+  {
+    value: "soft_neutral",
+    label: "Soft and neutral",
+    descriptor: "Ivory, blush, and white / peonies, ranunculus, and garden roses",
+  },
+  {
+    value: "romantic_warm",
+    label: "Romantic and warm",
+    descriptor: "Blush, mauve, and burgundy / roses, dahlias, and sweet peas",
+  },
+  {
+    value: "wildflower_earthy",
+    label: "Wildflower and earthy",
+    descriptor: "Cream, peach, and terracotta / cosmos, chamomile, and dried grasses",
+  },
+  {
+    value: "bold_rich",
+    label: "Bold and rich",
+    descriptor: "Deep plum, burgundy, and forest green / garden roses, anemones, and eucalyptus",
+  },
+  {
+    value: "fresh_green",
+    label: "Fresh and green",
+    descriptor: "White, ivory, and lush greenery / hydrangeas, ferns, and lily of the valley",
+  },
 ];
 
 export default function Step6Florals() {
@@ -30,10 +50,10 @@ export default function Step6Florals() {
           Step 6
         </p>
         <h1 className="font-serif font-light text-3xl sm:text-4xl text-hv-charcoal leading-snug mb-3">
-          What do your florals look like?
+          What colors and flowers feel like you?
         </h1>
         <p className="font-sans text-hv-sage text-sm sm:text-base leading-relaxed mb-10 max-w-md mx-auto">
-          Flowers set the entire tone. Choose the palette that speaks to you.
+          Choose the palette that speaks to you as a couple.
         </p>
 
         <div className="flex flex-col gap-3 mb-10">
@@ -41,14 +61,14 @@ export default function Step6Florals() {
             <button
               key={f.value}
               onClick={() => setSelected(f.value)}
-              className={`w-full flex items-center justify-between px-7 py-5 border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-hv-tan ${
+              className={`w-full flex flex-col px-7 py-5 border text-left transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-hv-tan ${
                 selected === f.value
                   ? "border-hv-green bg-hv-green text-white"
                   : "border-hv-linen bg-white text-hv-charcoal hover:border-hv-tan"
               }`}
             >
-              <span className="font-serif font-light text-xl text-left leading-snug">{f.label}</span>
-              <span className={`font-sans text-[10px] tracking-[0.2em] uppercase text-right ml-4 shrink-0 ${selected === f.value ? "text-white/70" : "text-hv-sage"}`}>
+              <span className="font-serif font-light text-xl mb-1">{f.label}</span>
+              <span className={`font-sans text-[11px] leading-relaxed ${selected === f.value ? "text-white/70" : "text-hv-sage"}`}>
                 {f.descriptor}
               </span>
             </button>
