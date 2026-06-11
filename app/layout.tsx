@@ -1,9 +1,25 @@
 import type { Metadata } from "next";
+import { Cormorant_Garamond, Inter } from "next/font/google";
 import "./globals.css";
+
+const cormorant = Cormorant_Garamond({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
+  style: ["normal", "italic"],
+  variable: "--font-cormorant",
+  display: "swap",
+});
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Haue Valley Vision Builder",
-  description: "Haue Valley Weddings in Pacific, MO.",
+  description:
+    "See what your wedding at Haue Valley looks like. Before you ever set foot on the property.",
 };
 
 export default function RootLayout({
@@ -12,8 +28,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className="antialiased">{children}</body>
+    <html lang="en" className={`${cormorant.variable} ${inter.variable}`}>
+      <body className="antialiased bg-white text-hv-charcoal">{children}</body>
     </html>
   );
 }
