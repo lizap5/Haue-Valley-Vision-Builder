@@ -45,13 +45,17 @@ function generateVision(state: BuilderState): {
   };
 
   const vision = [
-    `Picture ${seasonPhrases[season]}. You arrive to ${florals ? floralPhrases[florals] : "florals chosen just for you"} — everywhere you look, beauty that feels intentional rather than overdone.`,
+    `Picture ${seasonPhrases[season]}. You arrive to ${florals ? floralPhrases[florals] : "florals chosen just for you"}. Everywhere you look, beauty that feels intentional rather than overdone.`,
     `Your ceremony sets the tone: ${ceremonyPhrases[ceremony] ?? ceremonyPhrases["unsure"]}, surrounded by the people who matter most. Then the evening opens into a reception that feels ${vibePhrases[vibe] ?? "entirely like you"}.`,
     `This is what Haue Valley is built for. Not a one-size event, but a day that reflects exactly who you are as a couple.`,
   ].join("\n\n");
 
+  const wantsStressFree = (state.priorities ?? []).includes("stress_free");
+
   const all_inclusive_paragraph = isAllInclusive
-    ? `Haue Valley's all-inclusive package means every detail above is handled for you — catering, florals, coordination, and more — so you walk in and simply enjoy the day you pictured.`
+    ? `Haue Valley's all-inclusive package means every detail above is handled for you: catering, florals, coordination, and more. You walk in and simply enjoy the day you pictured.`
+    : wantsStressFree
+    ? `You said a stress-free day matters most. It is worth knowing that Haue Valley offers a fully all-inclusive package: catering, florals, coordination, and more, all handled in-house. Many couples find it changes how they experience their wedding day entirely. Ask us about it when you come for your tour.`
     : `Haue Valley works with your preferred vendors and can recommend trusted partners for every element of your day. You bring the vision; we provide the setting and the support.`;
 
   return {
