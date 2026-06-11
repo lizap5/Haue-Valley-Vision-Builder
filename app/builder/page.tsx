@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "Vision Builder — Haue Valley Weddings",
+  title: "Vision Builder | Haue Valley Weddings",
   description:
     "See what your wedding at Haue Valley looks like. Before you ever set foot on the property.",
 };

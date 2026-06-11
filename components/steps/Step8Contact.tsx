@@ -67,7 +67,7 @@ export default function Step8Contact() {
           <div>
             <input
               type="text"
-              placeholder="Wedding date (optional — even a rough month is great)"
+              placeholder="Wedding date (optional, even a rough month is great)"
               value={date}
               onChange={(e) => setDate(e.target.value)}
               className={inputClass}

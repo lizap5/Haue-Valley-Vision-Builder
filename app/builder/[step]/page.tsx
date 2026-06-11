@@ -15,7 +15,7 @@ interface Props {
 export async function generateMetadata({ params }: Props) {
   const { step } = await params;
   return {
-    title: `Step ${step} — Haue Valley Vision Builder`,
+    title: `Step ${step} | Haue Valley Vision Builder`,
   };
 }
 
