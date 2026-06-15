@@ -5,8 +5,9 @@ import Step3Season from "@/components/steps/Step3Season";
 import Step4Ceremony from "@/components/steps/Step4Ceremony";
 import Step5Vibe from "@/components/steps/Step5Vibe";
 import Step6Florals from "@/components/steps/Step6Florals";
-import Step7Priorities from "@/components/steps/Step7Priorities";
-import Step8Contact from "@/components/steps/Step8Contact";
+import Step7SignatureDrink from "@/components/steps/Step7SignatureDrink";
+import Step8Priorities from "@/components/steps/Step8Priorities";
+import Step9Contact from "@/components/steps/Step9Contact";
 
 interface Props {
   params: Promise<{ step: string }>;
@@ -29,8 +30,9 @@ export default async function StepPage({ params }: Props) {
     case "4": return <Step4Ceremony />;
     case "5": return <Step5Vibe />;
     case "6": return <Step6Florals />;
-    case "7": return <Step7Priorities />;
-    case "8": return <Step8Contact />;
+    case "7": return <Step7SignatureDrink />;
+    case "8": return <Step8Priorities />;
+    case "9": return <Step9Contact />;
     default:  notFound();
   }
 }

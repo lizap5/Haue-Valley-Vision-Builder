@@ -90,6 +90,8 @@ ABOUT THE COUPLE:
 - Florals and colors: ${FLORAL_LABELS[state.florals ?? ""] ?? "Not specified"}
 - Photography style: ${state.photography_style === "airy" ? "Light and airy" : state.photography_style === "moody" ? "Dark and moody" : "Not specified"}
 - What matters most: ${priorities || "Not specified"}
+- Signature drink: ${state.signature_drink || "Not specified"}
+- Additional notes from couple: ${state.additional_notes || "None"}
 
 Write exactly three paragraphs of vision copy. Each paragraph is two to four sentences. Paint a picture of their day using the details above. Be specific. Reference their actual choices. Do not summarize. Do not list. Make them feel it.
 

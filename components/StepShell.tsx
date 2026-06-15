@@ -8,7 +8,7 @@ interface StepShellProps {
   children: React.ReactNode;
 }
 
-export default function StepShell({ step, totalSteps = 8, children }: StepShellProps) {
+export default function StepShell({ step, totalSteps = 9, children }: StepShellProps) {
   return (
     <main className="min-h-screen bg-white flex flex-col">
       {/* Header */}

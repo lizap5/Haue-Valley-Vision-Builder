@@ -7,8 +7,10 @@ export interface BuilderState {
   ceremony_location?: string;
   reception_vibe?: string;
   florals?: string;
+  signature_drink?: string;
   priorities?: string[];
   all_inclusive_intent?: boolean;
+  additional_notes?: string;
   couple_names?: string;
   wedding_date?: string;
   email?: string;
