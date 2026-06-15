@@ -149,6 +149,11 @@ export default function ResultPage() {
           {/* Thin rule */}
           <div className="w-16 h-px bg-hv-linen mx-auto mb-8" />
 
+          {/* Tour transition */}
+          <p className="font-sans text-hv-charcoal text-base sm:text-lg leading-relaxed mb-8 text-center max-w-lg mx-auto">
+            Reading this is one thing. Standing in the space is another. We would love to show you around, answer your questions honestly, and let you decide if Haue Valley feels right for you.
+          </p>
+
           {/* All-inclusive paragraph */}
           <p className="font-sans text-hv-sage text-sm sm:text-base leading-relaxed mb-12 text-center max-w-lg mx-auto">
             {content.all_inclusive_paragraph}
