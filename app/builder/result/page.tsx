@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { getBuilderState, clearBuilderState, BuilderState } from "@/lib/builder-state";
 import { ScoredPhoto } from "@/app/api/builder/photos/route";
@@ -65,6 +64,10 @@ function ErrorScreen() {
   );
 }
 
+function proxied(url: string) {
+  return `/api/proxy/image?url=${encodeURIComponent(url)}`;
+}
+
 function PhotoGrid({ photos }: { photos: ScoredPhoto[] }) {
   if (!photos.length) {
     return (
@@ -82,29 +85,17 @@ function PhotoGrid({ photos }: { photos: ScoredPhoto[] }) {
     <div className="grid grid-cols-2 gap-3 mb-12">
       {first && (
         <div className="col-span-2 relative aspect-[16/9] overflow-hidden bg-hv-linen">
-          <img
-            src={first.url}
-            alt=""
-            className="w-full h-full object-cover"
-          />
+          <img src={proxied(first.url)} alt="" className="w-full h-full object-cover" />
         </div>
       )}
       {second && (
         <div className="relative aspect-square overflow-hidden bg-hv-linen">
-          <img
-            src={second.url}
-            alt=""
-            className="w-full h-full object-cover"
-          />
+          <img src={proxied(second.url)} alt="" className="w-full h-full object-cover" />
         </div>
       )}
       {third && (
         <div className="relative aspect-square overflow-hidden bg-hv-linen">
-          <img
-            src={third.url}
-            alt=""
-            className="w-full h-full object-cover"
-          />
+          <img src={proxied(third.url)} alt="" className="w-full h-full object-cover" />
         </div>
       )}
     </div>
