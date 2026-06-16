@@ -77,7 +77,7 @@ STRICT RULES — violating any of these means the copy is rejected:
 - Never use the word "barn" anywhere.
 - Do not use the word "unique" or "special".
 - Do not use corporate or AI-sounding phrases.
-- No filler compliments ("how exciting", "what a lovely choice").
+- No markdown of any kind. No hashtags, no asterisks, no bullet points, no headers.
 - Write in second person (you/your), present tense.
 - Short sentences. Two to three paragraphs. No bullet points.
 
@@ -144,7 +144,7 @@ export async function POST(req: NextRequest) {
     const raw = (message.content[0] as { type: string; text: string }).text.trim();
     const [visionPart, aiPart] = raw.split(/\n---\n/);
 
-    const vision = (visionPart ?? "").trim();
+    const vision = (visionPart ?? "").trim().replace(/^#+\s.+\n?/gm, "").trim();
     const all_inclusive_paragraph = (aiPart ?? "").trim() || fallbackVision(state).all_inclusive_paragraph;
 
     return NextResponse.json({
