@@ -85,6 +85,7 @@ ABOUT THE COUPLE:
 - Names: ${names}
 - Guest count: ${guestLabel}
 - Season: ${SEASON_LABELS[state.season ?? "unsure"] ?? "Not specified"}
+- Wedding date (typed by couple): ${state.wedding_date || "Not provided"}
 - Ceremony location: ${CEREMONY_LABELS[state.ceremony_location ?? "unsure"] ?? "Not specified"}
 - Reception vibe: ${VIBE_LABELS[state.reception_vibe ?? ""] ?? "Not specified"}
 - Florals and colors: ${FLORAL_LABELS[state.florals ?? ""] ?? "Not specified"}
@@ -92,6 +93,8 @@ ABOUT THE COUPLE:
 - What matters most: ${priorities || "Not specified"}
 - Signature drink: ${state.signature_drink || "Not specified"}
 - Additional notes from couple: ${state.additional_notes || "None"}
+
+If the couple provided a specific wedding date or month, use that exact month or timeframe when referencing their day. If no specific date was given, use the season label instead. Never contradict the date they typed.
 
 Write exactly three paragraphs of vision copy. Each paragraph is two to four sentences. Paint a picture of their day using the details above. Be specific. Reference their actual choices. Do not summarize. Do not list. Make them feel it.
 
