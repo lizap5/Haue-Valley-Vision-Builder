@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { getBuilderState, clearBuilderState, BuilderState } from "@/lib/builder-state";
+import { ScoredPhoto } from "@/app/api/builder/photos/route";
 
 interface ResultContent {
   heading: string;
@@ -63,25 +65,78 @@ function ErrorScreen() {
   );
 }
 
+function PhotoGrid({ photos }: { photos: ScoredPhoto[] }) {
+  if (!photos.length) {
+    return (
+      <div className="grid grid-cols-2 gap-3 mb-12">
+        <div className="col-span-2 bg-hv-linen aspect-[16/9]" />
+        <div className="bg-hv-linen aspect-square" />
+        <div className="bg-hv-linen aspect-square" />
+      </div>
+    );
+  }
+
+  const [first, second, third] = photos;
+
+  return (
+    <div className="grid grid-cols-2 gap-3 mb-12">
+      {first && (
+        <div className="col-span-2 relative aspect-[16/9] overflow-hidden bg-hv-linen">
+          <img
+            src={first.url}
+            alt=""
+            className="w-full h-full object-cover"
+          />
+        </div>
+      )}
+      {second && (
+        <div className="relative aspect-square overflow-hidden bg-hv-linen">
+          <img
+            src={second.url}
+            alt=""
+            className="w-full h-full object-cover"
+          />
+        </div>
+      )}
+      {third && (
+        <div className="relative aspect-square overflow-hidden bg-hv-linen">
+          <img
+            src={third.url}
+            alt=""
+            className="w-full h-full object-cover"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ResultPage() {
-  const [state, setState] = useState<BuilderState | null>(null);
   const [content, setContent] = useState<ResultContent | null>(null);
+  const [photos, setPhotos] = useState<ScoredPhoto[]>([]);
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    const s = getBuilderState();
-    setState(s);
+    const s: BuilderState = getBuilderState();
 
-    fetch("/api/builder/result", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(s),
-    })
-      .then((r) => {
-        if (!r.ok) throw new Error();
-        return r.json();
+    // Fetch vision copy and photos in parallel
+    Promise.all([
+      fetch("/api/builder/result", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(s),
+      }).then((r) => { if (!r.ok) throw new Error(); return r.json(); }),
+
+      fetch("/api/builder/photos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(s),
+      }).then((r) => r.json()).catch(() => ({ photos: [] })),
+    ])
+      .then(([visionData, photoData]) => {
+        setContent(visionData);
+        setPhotos(photoData.photos ?? []);
       })
-      .then((data) => setContent(data))
       .catch(() => setError(true));
   }, []);
 
@@ -115,32 +170,13 @@ export default function ResultPage() {
             {content.heading}
           </h1>
 
-          {/* Photo grid — placeholder until Airtable is connected */}
-          <div className="grid grid-cols-2 gap-3 mb-12">
-            <div className="col-span-2 bg-hv-linen aspect-[16/9] flex items-center justify-center">
-              <p className="font-sans text-[10px] tracking-[0.2em] uppercase text-hv-sage opacity-50">
-                Your venue photos will appear here
-              </p>
-            </div>
-            <div className="bg-hv-linen aspect-square flex items-center justify-center">
-              <p className="font-sans text-[9px] tracking-[0.15em] uppercase text-hv-sage opacity-40">
-                Photo 2
-              </p>
-            </div>
-            <div className="bg-hv-linen aspect-square flex items-center justify-center">
-              <p className="font-sans text-[9px] tracking-[0.15em] uppercase text-hv-sage opacity-40">
-                Photo 3
-              </p>
-            </div>
-          </div>
+          {/* Photos */}
+          <PhotoGrid photos={photos} />
 
           {/* Vision text */}
           <div className="mb-8">
             {visionParagraphs.map((p, i) => (
-              <p
-                key={i}
-                className="font-sans text-hv-charcoal text-base sm:text-lg leading-relaxed mb-5"
-              >
+              <p key={i} className="font-sans text-hv-charcoal text-base sm:text-lg leading-relaxed mb-5">
                 {p}
               </p>
             ))}
