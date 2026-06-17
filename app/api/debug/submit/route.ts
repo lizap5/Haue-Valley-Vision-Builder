@@ -9,7 +9,7 @@ export async function GET() {
     return NextResponse.json({ error: "Missing env vars", key: !!key, base: !!base, table: !!table });
   }
 
-  // Try writing a test record
+  // Send a full realistic payload matching exactly what the real submit sends
   const res = await fetch(`https://api.airtable.com/v0/${base}/${table}`, {
     method: "POST",
     headers: {
@@ -18,10 +18,22 @@ export async function GET() {
     },
     body: JSON.stringify({
       fields: {
-        "Couple Names": "TEST - delete me",
-        "Email": "test@test.com",
+        "Couple Names":             "TEST Full - delete me",
+        "Email":                    "test@test.com",
+        "Wedding Date":             "October 2027",
+        "Season":                   "Fall",
+        "Guest Count":              "50 – 100",
+        "Photography Style":        "Light and Airy",
+        "Ceremony Location":        "Outdoor stone space",
+        "Reception Vibe":           "Romantic garden party",
+        "Florals and Colors":       "Soft and neutral",
+        "Signature Drink":          "Lavender gin spritz",
+        "Priorities":               ["Amazing food and drinks", "A stress-free day"],
+        "All-Inclusive Interest":   false,
+        "Additional Notes":         "Test notes",
+        "Tour Status":              "Upcoming",
         "Vision Builder Completed": true,
-        "Tour Status": "Upcoming",
+        "Submitted At":             new Date().toISOString(),
       },
     }),
   });
