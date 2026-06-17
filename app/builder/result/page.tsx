@@ -110,6 +110,13 @@ export default function ResultPage() {
   useEffect(() => {
     const s: BuilderState = getBuilderState();
 
+    // Fire-and-forget: write to Airtable Tours table (never blocks the result)
+    fetch("/api/builder/submit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(s),
+    }).catch(() => {});
+
     // Fetch vision copy and photos in parallel
     Promise.all([
       fetch("/api/builder/result", {
