@@ -9,35 +9,17 @@ export async function GET() {
     return NextResponse.json({ error: "Missing env vars", key: !!key, base: !!base, table: !!table });
   }
 
-  // Send a full realistic payload matching exactly what the real submit sends
-  const res = await fetch(`https://api.airtable.com/v0/${base}/${table}`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${key}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      fields: {
-        "Couple Names":             "TEST Full - delete me",
-        "Email":                    "test@test.com",
-        "Wedding Date":             "October 2027",
-        "Season":                   "Fall",
-        "Guest Count":              "50 – 100",
-        "Photography Style":        "Light and Airy",
-        "Ceremony Location":        "Outdoor stone space",
-        "Reception Vibe":           "Romantic garden party",
-        "Florals and Colors":       "Soft and neutral",
-        "Signature Drink":          "Lavender gin spritz",
-        "Priorities":               ["Amazing food and drinks", "A stress-free day"],
-        "All-Inclusive Interest":   false,
-        "Additional Notes":         "Test notes",
-        "Tour Status":              "Upcoming",
-        "Vision Builder Completed": true,
-        "Submitted At":             new Date().toISOString(),
-      },
-    }),
-  });
+  // Fetch one record to see exact field names Airtable has
+  const res = await fetch(
+    `https://api.airtable.com/v0/${base}/${table}?maxRecords=1`,
+    { headers: { Authorization: `Bearer ${key}` } }
+  );
 
-  const body = await res.json();
-  return NextResponse.json({ status: res.status, ok: res.ok, body });
+  const data = await res.json();
+  const fields = data.records?.[0]?.fields ?? {};
+
+  return NextResponse.json({
+    field_names: Object.keys(fields),
+    sample_record: fields,
+  });
 }
