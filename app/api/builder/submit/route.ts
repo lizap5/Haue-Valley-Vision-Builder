@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
       "Wedding Date":             state.wedding_date ?? "",
       "Season":                   SEASON_LABELS[state.season ?? ""] ?? "",
       "Guest Count":              GUEST_COUNT_LABELS[state.guest_count ?? 0] ?? "",
-      "Photography Style":        PHOTO_STYLE_LABELS[state.photography_style ?? ""] ?? "",
+      "Photo Style":              PHOTO_STYLE_LABELS[state.photography_style ?? ""] ?? "",
       "Ceremony Location":        CEREMONY_LABELS[state.ceremony_location ?? ""] ?? "",
       "Reception Vibe":           VIBE_LABELS[state.reception_vibe ?? ""] ?? "",
       "Florals and Colors":       FLORAL_LABELS[state.florals ?? ""] ?? "",
