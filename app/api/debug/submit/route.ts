@@ -14,10 +14,21 @@ export async function GET() {
     });
   }
 
-  // Only singleLineText + checkbox fields — no singleSelect — to avoid option mismatch
+  // Test the full payload with real values to surface any field name/option mismatches
   const testFields = {
-    "Couple Names": "Debug Test",
+    "Couple Names": "Debug Test Full",
     "Email": "debug@test.com",
+    "Wedding Date": "October 2026",
+    "Season": "Fall",
+    "Guest Count": "100 – 150",
+    "Photo Style": "Light and Airy",
+    "Ceremony Location": "Outdoor stone space",
+    "Reception Vibe": "Romantic garden party",
+    "Florals and Colors": "Soft and neutral",
+    "Signature Drink": "Aperol Spritz",
+    "Priorities": ["Stunning photography", "A stress-free day"],
+    "All-Inclusive Interest": true,
+    "Additional Notes": "Debug test - ignore",
     "Vision Builder Completed": true,
     "Submitted At": new Date().toISOString(),
   };
@@ -43,8 +54,6 @@ export async function GET() {
       ok: res.ok,
       status: res.status,
       airtable_response: parsed,
-      table_id: table,
-      base_id: base,
     });
   } catch (err) {
     return NextResponse.json({ error: "Fetch threw", detail: String(err) });
