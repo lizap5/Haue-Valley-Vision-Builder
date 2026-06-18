@@ -82,6 +82,7 @@ export async function POST(req: NextRequest) {
       "Florals and Colors":       FLORAL_LABELS[state.florals ?? ""] ?? "",
       "Signature Drink":          state.signature_drink ?? "",
       "Budget Range":             state.budget_range ?? "",
+      "How They Heard About Us":  state.heard_about ?? "",
       "Priorities":               priorities,
       "All-Inclusive Interest":   state.all_inclusive_intent ?? false,
       "Additional Notes":         state.additional_notes ?? "",

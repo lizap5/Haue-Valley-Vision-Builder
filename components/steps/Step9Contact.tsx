@@ -12,6 +12,7 @@ export default function Step9Contact() {
   const [date, setDate] = useState("");
   const [notes, setNotes] = useState("");
   const [budget, setBudget] = useState("");
+  const [heardAbout, setHeardAbout] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   function validate() {
@@ -25,7 +26,7 @@ export default function Step9Contact() {
   function confirm() {
     const e = validate();
     if (Object.keys(e).length) { setErrors(e); return; }
-    setBuilderState({ couple_names: names.trim(), email: email.trim(), wedding_date: date.trim(), additional_notes: notes.trim(), budget_range: budget.trim() });
+    setBuilderState({ couple_names: names.trim(), email: email.trim(), wedding_date: date.trim(), additional_notes: notes.trim(), budget_range: budget.trim(), heard_about: heardAbout.trim() });
     router.push("/builder/result");
   }
 
@@ -83,6 +84,16 @@ export default function Step9Contact() {
               placeholder="Budget range (optional, e.g. $15,000 – $20,000)"
               value={budget}
               onChange={(e) => setBudget(e.target.value)}
+              className={inputClass}
+            />
+          </div>
+
+          <div>
+            <input
+              type="text"
+              placeholder="How did you hear about Haue Valley? (optional)"
+              value={heardAbout}
+              onChange={(e) => setHeardAbout(e.target.value)}
               className={inputClass}
             />
           </div>
