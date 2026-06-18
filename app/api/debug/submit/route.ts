@@ -9,17 +9,26 @@ export async function GET() {
     return NextResponse.json({ error: "Missing env vars", key: !!key, base: !!base, table: !!table });
   }
 
-  // Fetch one record to see exact field names Airtable has
+  // Use Metadata API to get field names directly from schema
   const res = await fetch(
-    `https://api.airtable.com/v0/${base}/${table}?maxRecords=1`,
+    `https://api.airtable.com/v0/meta/bases/${base}/tables`,
     { headers: { Authorization: `Bearer ${key}` } }
   );
 
   const data = await res.json();
-  const fields = data.records?.[0]?.fields ?? {};
+
+  if (!res.ok) {
+    return NextResponse.json({ error: "Metadata API failed", status: res.status, body: data });
+  }
+
+  const toursTable = data.tables?.find((t: { id: string; name: string; fields: { name: string; type: string }[] }) => t.id === table);
+
+  if (!toursTable) {
+    return NextResponse.json({ error: "Tours table not found", tableId: table, allTables: data.tables?.map((t: { id: string; name: string }) => ({ id: t.id, name: t.name })) });
+  }
 
   return NextResponse.json({
-    field_names: Object.keys(fields),
-    sample_record: fields,
+    table_name: toursTable.name,
+    fields: toursTable.fields.map((f: { name: string; type: string }) => ({ name: f.name, type: f.type })),
   });
 }
