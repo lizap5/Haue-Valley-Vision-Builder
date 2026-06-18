@@ -34,7 +34,7 @@ export default function Step8Priorities() {
   }
 
   return (
-    <StepShell step={8} totalSteps={9}>
+    <StepShell step={8} totalSteps={9} photo="/images/steps/step-8.jpg">
       <div className="max-w-xl w-full text-center">
         <p className="font-sans text-[10px] tracking-[0.3em] uppercase text-hv-sage mb-4">
           Step 8

@@ -44,7 +44,7 @@ export default function Step6Florals() {
   }
 
   return (
-    <StepShell step={6}>
+    <StepShell step={6} photo="/images/steps/step-6.jpg">
       <div className="max-w-xl w-full text-center">
         <p className="font-sans text-[10px] tracking-[0.3em] uppercase text-hv-sage mb-4">
           Step 6

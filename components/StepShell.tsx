@@ -5,10 +5,11 @@ import Link from "next/link";
 interface StepShellProps {
   step: number;
   totalSteps?: number;
+  photo?: string;
   children: React.ReactNode;
 }
 
-export default function StepShell({ step, totalSteps = 9, children }: StepShellProps) {
+export default function StepShell({ step, totalSteps = 9, photo, children }: StepShellProps) {
   return (
     <main className="min-h-screen bg-white flex flex-col">
       {/* Header */}
@@ -34,8 +35,19 @@ export default function StepShell({ step, totalSteps = 9, children }: StepShellP
         />
       </div>
 
+      {/* Step photo */}
+      {photo && (
+        <div className="w-full aspect-[4/3] sm:aspect-[16/7] overflow-hidden bg-hv-linen">
+          <img
+            src={photo}
+            alt=""
+            className="w-full h-full object-cover"
+          />
+        </div>
+      )}
+
       {/* Content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
+      <div className="flex-1 flex flex-col items-center justify-center px-6 py-10">
         {children}
       </div>
 

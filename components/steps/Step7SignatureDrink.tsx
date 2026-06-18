@@ -16,7 +16,7 @@ export default function Step7SignatureDrink() {
   }
 
   return (
-    <StepShell step={7} totalSteps={9}>
+    <StepShell step={7} totalSteps={9} photo="/images/steps/step-7.jpg">
       <div className="max-w-xl w-full text-center">
         <p className="font-sans text-[10px] tracking-[0.3em] uppercase text-hv-sage mb-4">
           Step 7

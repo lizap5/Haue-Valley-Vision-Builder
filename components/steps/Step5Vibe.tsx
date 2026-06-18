@@ -24,7 +24,7 @@ export default function Step5Vibe() {
   }
 
   return (
-    <StepShell step={5}>
+    <StepShell step={5} photo="/images/steps/step-5.jpg">
       <div className="max-w-xl w-full text-center">
         <p className="font-sans text-[10px] tracking-[0.3em] uppercase text-hv-sage mb-4">
           Step 5

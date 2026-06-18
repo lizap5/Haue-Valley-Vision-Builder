@@ -24,7 +24,7 @@ export default function Step2GuestCount() {
   }
 
   return (
-    <StepShell step={2}>
+    <StepShell step={2} photo="/images/steps/step-2.jpg">
       <div className="max-w-xl w-full text-center">
         <p className="font-sans text-[10px] tracking-[0.3em] uppercase text-hv-sage mb-4">
           Step 2
