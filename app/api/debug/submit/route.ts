@@ -6,37 +6,47 @@ export async function GET() {
   const table = process.env.AIRTABLE_TOURS_TABLE_ID;
 
   if (!key || !base || !table) {
-    return NextResponse.json({ error: "Missing env vars", key: !!key, base: !!base, table: !!table });
+    return NextResponse.json({
+      error: "Missing env vars",
+      key: !!key,
+      base: !!base,
+      table: !!table,
+    });
   }
 
-  // Attempt a real test write with a minimal known-good payload
+  // Only singleLineText + checkbox fields — no singleSelect — to avoid option mismatch
   const testFields = {
     "Couple Names": "Debug Test",
     "Email": "debug@test.com",
-    "Tour Status": "Upcoming",
     "Vision Builder Completed": true,
     "Submitted At": new Date().toISOString(),
   };
 
-  const res = await fetch(
-    `https://api.airtable.com/v0/${base}/${table}`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${key}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ fields: testFields }),
-    }
-  );
+  try {
+    const res = await fetch(
+      `https://api.airtable.com/v0/${base}/${table}`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${key}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ fields: testFields }),
+      }
+    );
 
-  const data = await res.json();
+    const text = await res.text();
+    let parsed: unknown;
+    try { parsed = JSON.parse(text); } catch { parsed = text; }
 
-  return NextResponse.json({
-    ok: res.ok,
-    status: res.status,
-    airtable_response: data,
-    fields_sent: testFields,
-    env: { base, table: table.slice(0, 8) + "..." },
-  });
+    return NextResponse.json({
+      ok: res.ok,
+      status: res.status,
+      airtable_response: parsed,
+      table_id: table,
+      base_id: base,
+    });
+  } catch (err) {
+    return NextResponse.json({ error: "Fetch threw", detail: String(err) });
+  }
 }
