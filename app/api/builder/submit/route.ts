@@ -84,6 +84,7 @@ export async function POST(req: NextRequest) {
       "Priorities":               priorities,
       "All-Inclusive Interest":   state.all_inclusive_intent ?? false,
       "Additional Notes":         state.additional_notes ?? "",
+      "Tour Status":              "Upcoming",
       "Vision Builder Completed": true,
       "Submitted At":             new Date().toISOString(),
     };

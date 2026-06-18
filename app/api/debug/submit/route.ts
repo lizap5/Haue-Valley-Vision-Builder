@@ -29,6 +29,7 @@ export async function GET() {
     "Priorities": ["Stunning photography", "A stress-free day"],
     "All-Inclusive Interest": true,
     "Additional Notes": "Debug test - ignore",
+    "Tour Status": "Upcoming",
     "Vision Builder Completed": true,
     "Submitted At": new Date().toISOString(),
   };
