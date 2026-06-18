@@ -11,6 +11,7 @@ export default function Step9Contact() {
   const [email, setEmail] = useState("");
   const [date, setDate] = useState("");
   const [notes, setNotes] = useState("");
+  const [budget, setBudget] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   function validate() {
@@ -24,7 +25,7 @@ export default function Step9Contact() {
   function confirm() {
     const e = validate();
     if (Object.keys(e).length) { setErrors(e); return; }
-    setBuilderState({ couple_names: names.trim(), email: email.trim(), wedding_date: date.trim(), additional_notes: notes.trim() });
+    setBuilderState({ couple_names: names.trim(), email: email.trim(), wedding_date: date.trim(), additional_notes: notes.trim(), budget_range: budget.trim() });
     router.push("/builder/result");
   }
 
@@ -72,6 +73,16 @@ export default function Step9Contact() {
               placeholder="Wedding date (optional, even a rough month is great)"
               value={date}
               onChange={(e) => setDate(e.target.value)}
+              className={inputClass}
+            />
+          </div>
+
+          <div>
+            <input
+              type="text"
+              placeholder="Budget range (optional, e.g. $15,000 – $20,000)"
+              value={budget}
+              onChange={(e) => setBudget(e.target.value)}
               className={inputClass}
             />
           </div>

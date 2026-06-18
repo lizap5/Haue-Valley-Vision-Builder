@@ -14,6 +14,7 @@ export interface BuilderState {
   couple_names?: string;
   wedding_date?: string;
   email?: string;
+  budget_range?: string;
 }
 
 const STORAGE_KEY = "hv_builder";

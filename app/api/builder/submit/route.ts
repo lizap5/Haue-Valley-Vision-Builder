@@ -81,6 +81,7 @@ export async function POST(req: NextRequest) {
       "Reception Vibe":           VIBE_LABELS[state.reception_vibe ?? ""] ?? "",
       "Florals and Colors":       FLORAL_LABELS[state.florals ?? ""] ?? "",
       "Signature Drink":          state.signature_drink ?? "",
+      "Budget Range":             state.budget_range ?? "",
       "Priorities":               priorities,
       "All-Inclusive Interest":   state.all_inclusive_intent ?? false,
       "Additional Notes":         state.additional_notes ?? "",
