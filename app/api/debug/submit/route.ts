@@ -9,26 +9,34 @@ export async function GET() {
     return NextResponse.json({ error: "Missing env vars", key: !!key, base: !!base, table: !!table });
   }
 
-  // Use Metadata API to get field names directly from schema
+  // Attempt a real test write with a minimal known-good payload
+  const testFields = {
+    "Couple Names": "Debug Test",
+    "Email": "debug@test.com",
+    "Tour Status": "Upcoming",
+    "Vision Builder Completed": true,
+    "Submitted At": new Date().toISOString(),
+  };
+
   const res = await fetch(
-    `https://api.airtable.com/v0/meta/bases/${base}/tables`,
-    { headers: { Authorization: `Bearer ${key}` } }
+    `https://api.airtable.com/v0/${base}/${table}`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ fields: testFields }),
+    }
   );
 
   const data = await res.json();
 
-  if (!res.ok) {
-    return NextResponse.json({ error: "Metadata API failed", status: res.status, body: data });
-  }
-
-  const toursTable = data.tables?.find((t: { id: string; name: string; fields: { name: string; type: string }[] }) => t.id === table);
-
-  if (!toursTable) {
-    return NextResponse.json({ error: "Tours table not found", tableId: table, allTables: data.tables?.map((t: { id: string; name: string }) => ({ id: t.id, name: t.name })) });
-  }
-
   return NextResponse.json({
-    table_name: toursTable.name,
-    fields: toursTable.fields.map((f: { name: string; type: string }) => ({ name: f.name, type: f.type })),
+    ok: res.ok,
+    status: res.status,
+    airtable_response: data,
+    fields_sent: testFields,
+    env: { base, table: table.slice(0, 8) + "..." },
   });
 }
