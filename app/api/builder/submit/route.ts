@@ -71,15 +71,20 @@ export async function POST(req: NextRequest) {
       .map((p) => PRIORITY_LABELS[p] ?? p);
 
     const fields: Record<string, unknown> = {
-      // singleLineText / email / multilineText / checkbox fields — always safe
       "Couple Names":             state.couple_names ?? "",
       "Email":                    state.email ?? "",
       "Wedding Date":             state.wedding_date ?? "",
+      "Season":                   SEASON_LABELS[state.season ?? ""] ?? "",
       "Guest Count":              GUEST_COUNT_LABELS[state.guest_count ?? 0] ?? "",
+      "Photo Style":              PHOTO_STYLE_LABELS[state.photography_style ?? ""] ?? "",
+      "Ceremony Location":        CEREMONY_LABELS[state.ceremony_location ?? ""] ?? "",
+      "Reception Vibe":           VIBE_LABELS[state.reception_vibe ?? ""] ?? "",
+      "Florals and Colors":       FLORAL_LABELS[state.florals ?? ""] ?? "",
       "Signature Drink":          state.signature_drink ?? "",
       "Priorities":               priorities,
       "All-Inclusive Interest":   state.all_inclusive_intent ?? false,
       "Additional Notes":         state.additional_notes ?? "",
+      "Tour Status":              "Upcoming",
       "Vision Builder Completed": true,
       "Submitted At":             new Date().toISOString(),
     };
