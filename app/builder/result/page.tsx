@@ -194,6 +194,7 @@ export default function ResultPage() {
           </p>
 
           {/* CTA */}
+          {/* TODO: Replace href with Calendly booking link when available */}
           <div className="flex flex-col items-center gap-5">
             <a
               href="https://hauevalleyweddings.com/contact"
