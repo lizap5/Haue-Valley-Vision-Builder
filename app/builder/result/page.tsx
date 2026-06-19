@@ -116,19 +116,22 @@ export default function ResultPage() {
   const [content, setContent] = useState<ResultContent | null>(null);
   const [photos, setPhotos] = useState<ScoredPhoto[]>([]);
   const [signage, setSignage] = useState<SignageData | null>(null);
+  const [signageLoading, setSignageLoading] = useState(true);
+  const [builderState, setBuilderState] = useState<BuilderState>({});
   const [error, setError] = useState(false);
 
   useEffect(() => {
     const s: BuilderState = getBuilderState();
+    setBuilderState(s);
 
-    // Fire-and-forget: write to Airtable Tours table (never blocks the result)
+    // Fire-and-forget: write to Airtable
     fetch("/api/builder/submit", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(s),
     }).catch(() => {});
 
-    // Fetch vision copy, photos, and signage in parallel
+    // Vision + photos unblock the page immediately
     Promise.all([
       fetch("/api/builder/result", {
         method: "POST",
@@ -141,19 +144,23 @@ export default function ResultPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(s),
       }).then((r) => r.json()).catch(() => ({ photos: [] })),
-
-      fetch("/api/builder/signage", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(s),
-      }).then((r) => r.json()).catch(() => ({ ok: false })),
     ])
-      .then(([visionData, photoData, signageData]) => {
+      .then(([visionData, photoData]) => {
         setContent(visionData);
         setPhotos(photoData.photos ?? []);
-        setSignage(signageData);
       })
       .catch(() => setError(true));
+
+    // Signage loads separately — never blocks the page
+    fetch("/api/builder/signage", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(s),
+    })
+      .then((r) => r.json())
+      .then((data) => setSignage(data))
+      .catch(() => setSignage({ ok: false }))
+      .finally(() => setSignageLoading(false));
   }, []);
 
   if (error) return <ErrorScreen />;
@@ -212,49 +219,64 @@ export default function ResultPage() {
           </p>
 
           {/* Signage preview */}
-          {signage?.ok && signage.drinkImageUrl && signage.colors && (
-            <div className="mb-16">
-              <div className="w-16 h-px bg-hv-linen mx-auto mb-10" />
-              <p className="font-sans text-[10px] tracking-[0.35em] uppercase text-hv-sage text-center mb-2">
-                A glimpse of your day
-              </p>
-              <p className="font-serif font-light text-xl text-hv-charcoal text-center mb-10">
-                How it might look when you arrive.
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 items-start">
-                <div>
+          <div className="mb-16">
+            <div className="w-16 h-px bg-hv-linen mx-auto mb-10" />
+            <p className="font-sans text-[10px] tracking-[0.35em] uppercase text-hv-sage text-center mb-2">
+              A glimpse of your day
+            </p>
+            <p className="font-serif font-light text-xl text-hv-charcoal text-center mb-10">
+              How it might look when you arrive.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 items-start">
+
+              {/* Bar sign — loads async */}
+              <div>
+                {signageLoading ? (
+                  <div className="w-full max-w-[320px] mx-auto aspect-[9/16] bg-hv-linen animate-pulse" />
+                ) : signage?.ok && signage.drinkImageUrl && signage.colors ? (
                   <BarSign
-                    drink={signage.drink ?? ""}
+                    drink={signage.drink ?? builderState.signature_drink ?? ""}
                     drinkImageUrl={signage.drinkImageUrl}
                     accentColor={signage.colors.accent}
                     textColor={signage.colors.text}
                   />
-                  <p className="font-sans text-[9px] tracking-[0.2em] uppercase text-hv-sage text-center mt-3 opacity-60">
-                    Bar signage
-                  </p>
-                </div>
-                <div>
-                  <WelcomeSign
-                    coupleNames={content.heading.replace(", this is your Haue Valley wedding.", "")}
-                    weddingDate={getBuilderState().wedding_date ?? ""}
-                    bgColor={signage.colors.bg}
-                    textColor={signage.colors.text}
-                  />
-                  <p className="font-sans text-[9px] tracking-[0.2em] uppercase text-hv-sage text-center mt-3 opacity-60">
-                    Welcome sign
-                  </p>
-                </div>
-                <div>
-                  <SeatingChart
-                    coupleNames={content.heading.replace(", this is your Haue Valley wedding.", "")}
-                  />
-                  <p className="font-sans text-[9px] tracking-[0.2em] uppercase text-hv-sage text-center mt-3 opacity-60">
-                    Seating chart
-                  </p>
-                </div>
+                ) : (
+                  <div className="w-full max-w-[320px] mx-auto aspect-[9/16] bg-hv-linen flex items-center justify-center">
+                    <p className="font-sans text-[9px] tracking-[0.2em] uppercase text-hv-sage opacity-50 text-center px-4">
+                      Bar signage coming soon
+                    </p>
+                  </div>
+                )}
+                <p className="font-sans text-[9px] tracking-[0.2em] uppercase text-hv-sage text-center mt-3 opacity-60">
+                  Bar signage
+                </p>
               </div>
+
+              {/* Welcome sign — renders immediately */}
+              <div>
+                <WelcomeSign
+                  coupleNames={content.heading.replace(", this is your Haue Valley wedding.", "")}
+                  weddingDate={builderState.wedding_date ?? ""}
+                  bgColor={signage?.colors?.bg ?? "#F2EDE4"}
+                  textColor={signage?.colors?.text ?? "#3D3228"}
+                />
+                <p className="font-sans text-[9px] tracking-[0.2em] uppercase text-hv-sage text-center mt-3 opacity-60">
+                  Welcome sign
+                </p>
+              </div>
+
+              {/* Seating chart — renders immediately */}
+              <div>
+                <SeatingChart
+                  coupleNames={content.heading.replace(", this is your Haue Valley wedding.", "")}
+                />
+                <p className="font-sans text-[9px] tracking-[0.2em] uppercase text-hv-sage text-center mt-3 opacity-60">
+                  Seating chart
+                </p>
+              </div>
+
             </div>
-          )}
+          </div>
 
           {/* CTA */}
           {/* TODO: Replace href with Calendly booking link when available */}
