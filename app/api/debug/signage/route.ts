@@ -14,11 +14,11 @@ export async function GET() {
     const openai = new OpenAI({ apiKey: key });
 
     const response = await openai.images.generate({
-      model: "dall-e-3",
+      model: "dall-e-2",
       prompt: "A professional product photography shot of an Aperol Spritz cocktail in a wine glass with an orange slice garnish, on a marble surface, warm cream background, soft natural light, no text.",
       n: 1,
-      size: "1024x1792",
-      quality: "standard",
+      size: "1024x1024",
+      
     });
 
     return NextResponse.json({
