@@ -33,7 +33,7 @@ export default function Step9Contact() {
   const inputClass = "w-full font-sans text-base text-hv-charcoal border border-hv-linen px-5 py-4 focus:outline-none focus:border-hv-tan placeholder:text-hv-sage/50 bg-white";
 
   return (
-    <StepShell step={9} totalSteps={9} photo="/images/steps/step-9.jpg">
+    <StepShell step={9} totalSteps={9} photo="/images/steps/small-wedding-ceremony-st-louis.webp">
       <div className="max-w-md w-full text-center">
         <p className="font-sans text-[10px] tracking-[0.3em] uppercase text-hv-sage mb-4">
           Step 9
