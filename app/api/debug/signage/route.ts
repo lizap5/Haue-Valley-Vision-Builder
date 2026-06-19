@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
 
 export const maxDuration = 60;
 
@@ -7,10 +6,11 @@ export async function GET() {
   const key = process.env.OPENAI_API_KEY;
 
   if (!key) {
-    return NextResponse.json({ error: "Missing OPENAI_API_KEY" });
+    return NextResponse.json({ ok: false, error: "Missing OPENAI_API_KEY" });
   }
 
   try {
+    const { default: OpenAI } = await import("openai");
     const openai = new OpenAI({ apiKey: key });
 
     const response = await openai.images.generate({
@@ -23,7 +23,7 @@ export async function GET() {
 
     return NextResponse.json({
       ok: true,
-      imageUrl: response.data[0]?.url,
+      imageUrl: response.data?.[0]?.url,
       keyPresent: true,
     });
   } catch (err: unknown) {
