@@ -41,14 +41,14 @@ export default function Step5Vibe() {
             <button
               key={v.value}
               onClick={() => setSelected(v.value)}
-              className={`w-full flex items-center justify-between px-7 py-5 border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-hv-tan ${
+              className={`w-full flex flex-col items-start px-6 py-5 border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-hv-tan text-left ${
                 selected === v.value
                   ? "border-hv-green bg-hv-green text-white"
                   : "border-hv-linen bg-white text-hv-charcoal hover:border-hv-tan"
               }`}
             >
-              <span className="font-serif font-light text-xl text-left leading-snug">{v.label}</span>
-              <span className={`font-sans text-[10px] tracking-[0.2em] uppercase text-right ml-4 shrink-0 ${selected === v.value ? "text-white/70" : "text-hv-sage"}`}>
+              <span className="font-serif font-light text-lg sm:text-xl leading-snug">{v.label}</span>
+              <span className={`font-sans text-[10px] tracking-[0.2em] uppercase mt-1 ${selected === v.value ? "text-white/70" : "text-hv-sage"}`}>
                 {v.descriptor}
               </span>
             </button>

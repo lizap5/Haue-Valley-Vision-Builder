@@ -18,7 +18,7 @@ export default function StepShell({ step, totalSteps = 9, photo, children }: Ste
   return (
     <main className="min-h-screen bg-white flex flex-col">
       {/* Header */}
-      <header className="w-full flex justify-between items-center px-8 pt-8 pb-2">
+      <header className="w-full flex justify-between items-center px-5 sm:px-8 pt-8 pb-2">
         <Link href="/builder" className="text-center">
           <p className="font-sans text-[10px] tracking-[0.35em] uppercase text-hv-green font-medium">
             Haue Valley

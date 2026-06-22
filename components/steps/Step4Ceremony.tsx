@@ -39,15 +39,15 @@ export default function Step4Ceremony() {
             <button
               key={l.value}
               onClick={() => setSelected(l.value)}
-              className={`w-full flex items-center justify-between px-7 py-5 border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-hv-tan ${
+              className={`w-full flex flex-col items-start px-6 py-5 border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-hv-tan text-left ${
                 selected === l.value
                   ? "border-hv-green bg-hv-green text-white"
                   : "border-hv-linen bg-white text-hv-charcoal hover:border-hv-tan"
               }`}
             >
-              <span className="font-serif font-light text-xl text-left leading-snug">{l.label}</span>
+              <span className="font-serif font-light text-lg sm:text-xl leading-snug">{l.label}</span>
               {l.descriptor && (
-                <span className={`font-sans text-[10px] tracking-[0.2em] uppercase text-right ml-4 shrink-0 ${selected === l.value ? "text-white/70" : "text-hv-sage"}`}>
+                <span className={`font-sans text-[10px] tracking-[0.2em] uppercase mt-1 ${selected === l.value ? "text-white/70" : "text-hv-sage"}`}>
                   {l.descriptor}
                 </span>
               )}
