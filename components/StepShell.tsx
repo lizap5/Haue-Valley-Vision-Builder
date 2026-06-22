@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 
 interface StepShellProps {
@@ -10,6 +11,10 @@ interface StepShellProps {
 }
 
 export default function StepShell({ step, totalSteps = 9, photo, children }: StepShellProps) {
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, [step]);
+
   return (
     <main className="min-h-screen bg-white flex flex-col">
       {/* Header */}

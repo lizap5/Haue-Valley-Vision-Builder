@@ -283,6 +283,8 @@ export default function ResultPage() {
           <div className="flex flex-col items-center gap-5">
             <a
               href="https://hauevalleyweddings.com/contact"
+              target="_blank"
+              rel="noopener noreferrer"
               className="font-sans inline-block bg-hv-green text-white text-[11px] tracking-[0.2em] uppercase px-12 py-4 hover:bg-hv-green-dark transition-colors duration-200"
             >
               Schedule your tour
