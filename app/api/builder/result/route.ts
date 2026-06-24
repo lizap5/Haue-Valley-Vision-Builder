@@ -93,7 +93,9 @@ ABOUT THE COUPLE:
 
 If the couple provided a specific wedding date or month, use that exact month or timeframe when referencing their day. If no specific date was given, use the season label instead. Never contradict the date they typed.
 
-Write exactly three paragraphs of vision copy. Each paragraph is two to four sentences. Paint a picture of their day using the details above. Be specific. Reference their actual choices. Do not summarize. Do not list. Make them feel it.
+First, output a 2–4 word style name for this couple's wedding vision. It should be poetic and specific, not generic. Examples: Garden Romance in Bloom, Candlelit Forest Elegance, Moody Autumn Warmth, Soft Ivory and Stone. No quotation marks. Then output this separator on its own line:
+===
+Then write exactly three paragraphs of vision copy. Each paragraph is two to four sentences. Paint a picture of their day using the details above. Be specific. Reference their actual choices. Do not summarize. Do not list. Make them feel it.
 
 After the three paragraphs, output exactly this separator on its own line:
 ---
@@ -101,13 +103,14 @@ Then output the all-inclusive paragraph exactly as written below. Do not rewrite
 ${aiParagraph}`;
 }
 
-function fallbackVision(state: BuilderState): { heading: string; vision: string; all_inclusive_paragraph: string } {
+function fallbackVision(state: BuilderState): { heading: string; style_name: string; vision: string; all_inclusive_paragraph: string } {
   const names = state.couple_names || "You two";
   const isAllInclusive = state.all_inclusive_intent ?? state.priority === "all_inclusive";
   const wantsStressFree = state.priority === "stress_free";
 
   return {
     heading: `${names}, this is your Haue Valley wedding.`,
+    style_name: "Your Haue Valley Vision",
     vision: [
       "Picture the property on your day. Florals that reflect exactly who you are. Guests who feel the care in every corner.",
       "Your ceremony sets the tone, and the evening that follows carries it forward. Every detail considered. Nothing that feels like filler.",
@@ -139,13 +142,15 @@ export async function POST(req: NextRequest) {
     });
 
     const raw = (message.content[0] as { type: string; text: string }).text.trim();
-    const [visionPart, aiPart] = raw.split(/\n---\n/);
-
-    const vision = (visionPart ?? "").trim().replace(/^#+\s.+\n?/gm, "").trim();
+    const [styleAndVision, aiPart] = raw.split(/\n---\n/);
+    const [styleNameRaw, visionPart] = (styleAndVision ?? "").split(/\n===\n/);
+    const style_name = (styleNameRaw ?? "").trim().replace(/^#+\s/, "") || fallbackVision(state).style_name;
+    const vision = (visionPart ?? styleAndVision ?? "").trim().replace(/^#+\s.+\n?/gm, "").trim();
     const all_inclusive_paragraph = (aiPart ?? "").trim() || fallbackVision(state).all_inclusive_paragraph;
 
     return NextResponse.json({
       heading: `${names}, this is your Haue Valley wedding.`,
+      style_name,
       vision,
       all_inclusive_paragraph,
     });

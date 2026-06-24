@@ -17,6 +17,7 @@ interface SignageData {
 
 interface ResultContent {
   heading: string;
+  style_name: string;
   vision: string;
   all_inclusive_paragraph: string;
 }
@@ -112,17 +113,54 @@ function PhotoGrid({ photos }: { photos: ScoredPhoto[] }) {
   );
 }
 
+function ShareButton({ styleName, coupleNames }: { styleName: string; coupleNames: string }) {
+  const [copied, setCopied] = useState(false);
+
+  async function handleShare() {
+    const shareData = {
+      title: `${coupleNames} — ${styleName}`,
+      text: `We just built our wedding vision at Haue Valley Weddings. Take a look.`,
+      url: window.location.href,
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch {
+        // user cancelled — no action needed
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch {
+        // clipboard unavailable — silent fail
+      }
+    }
+  }
+
+  return (
+    <button
+      onClick={handleShare}
+      className="font-sans text-[11px] tracking-[0.2em] uppercase text-hv-green border border-hv-green px-12 py-4 hover:bg-hv-green hover:text-white transition-colors duration-200"
+    >
+      {copied ? "Link copied" : "Share your vision"}
+    </button>
+  );
+}
+
 export default function ResultPage() {
   const [content, setContent] = useState<ResultContent | null>(null);
   const [photos, setPhotos] = useState<ScoredPhoto[]>([]);
   const [signage, setSignage] = useState<SignageData | null>(null);
   const [signageLoading, setSignageLoading] = useState(true);
-  const [builderState, setBuilderState] = useState<BuilderState>({});
+  const [localState, setLocalState] = useState<BuilderState>({});
   const [error, setError] = useState(false);
 
   useEffect(() => {
     const s: BuilderState = getBuilderState();
-    setBuilderState(s);
+    setLocalState(s);
 
     // Fire-and-forget: write to Airtable
     fetch("/api/builder/submit", {
@@ -167,6 +205,7 @@ export default function ResultPage() {
   if (!content) return <LoadingScreen />;
 
   const visionParagraphs = content.vision.split("\n\n");
+  const coupleNames = content.heading.replace(", this is your Haue Valley wedding.", "");
 
   return (
     <main className="min-h-screen bg-white flex flex-col">
@@ -188,10 +227,23 @@ export default function ResultPage() {
       <div className="flex-1 flex flex-col items-center px-6 py-16">
         <div className="max-w-2xl w-full">
 
+          {/* Style name */}
+          <p className="font-sans text-[10px] tracking-[0.35em] uppercase text-hv-sage text-center mb-4">
+            {content.style_name}
+          </p>
+
           {/* Personalized heading */}
-          <h1 className="font-serif font-light text-3xl sm:text-4xl md:text-[2.75rem] text-hv-charcoal leading-tight mb-10 text-center">
+          <h1 className="font-serif font-light text-3xl sm:text-4xl md:text-[2.75rem] text-hv-charcoal leading-tight mb-5 text-center">
             {content.heading}
           </h1>
+
+          {/* Confirmation line */}
+          {localState.email && (
+            <p className="font-sans text-hv-sage text-sm text-center mb-12 max-w-md mx-auto leading-relaxed">
+              We have sent your vision to {localState.email}. We cannot wait to show you in person.
+            </p>
+          )}
+          {!localState.email && <div className="mb-12" />}
 
           {/* Photos */}
           <PhotoGrid photos={photos} />
@@ -235,7 +287,7 @@ export default function ResultPage() {
                   <div className="w-full max-w-[320px] mx-auto aspect-[9/16] bg-hv-linen animate-pulse" />
                 ) : signage?.ok && signage.drinkImageUrl && signage.colors ? (
                   <BarSign
-                    drink={signage.drink ?? builderState.signature_drink ?? ""}
+                    drink={signage.drink ?? localState.signature_drink ?? ""}
                     drinkImageUrl={signage.drinkImageUrl}
                     accentColor={signage.colors.accent}
                     textColor={signage.colors.text}
@@ -255,8 +307,8 @@ export default function ResultPage() {
               {/* Welcome sign — renders immediately */}
               <div>
                 <WelcomeSign
-                  coupleNames={content.heading.replace(", this is your Haue Valley wedding.", "")}
-                  weddingDate={builderState.wedding_date ?? ""}
+                  coupleNames={coupleNames}
+                  weddingDate={localState.wedding_date ?? ""}
                   bgColor={signage?.colors?.bg ?? "#F2EDE4"}
                   textColor={signage?.colors?.text ?? "#3D3228"}
                 />
@@ -268,7 +320,7 @@ export default function ResultPage() {
               {/* Seating chart — renders immediately */}
               <div>
                 <SeatingChart
-                  coupleNames={content.heading.replace(", this is your Haue Valley wedding.", "")}
+                  coupleNames={coupleNames}
                 />
                 <p className="font-sans text-[9px] tracking-[0.2em] uppercase text-hv-sage text-center mt-3 opacity-60">
                   Seating chart
@@ -278,9 +330,9 @@ export default function ResultPage() {
             </div>
           </div>
 
-          {/* CTA */}
-          {/* TODO: Replace href with Calendly booking link when available */}
-          <div className="flex flex-col items-center gap-5">
+          {/* CTAs */}
+          <div className="flex flex-col items-center gap-4">
+            {/* TODO: Replace href with Calendly booking link when available */}
             <a
               href="https://hauevalleyweddings.com/contact"
               target="_blank"
@@ -289,12 +341,13 @@ export default function ResultPage() {
             >
               Schedule your tour
             </a>
+            <ShareButton styleName={content.style_name} coupleNames={coupleNames} />
             <button
               onClick={() => {
                 clearBuilderState();
                 window.location.href = "/builder";
               }}
-              className="font-sans text-[10px] tracking-[0.2em] uppercase text-hv-sage hover:text-hv-charcoal transition-colors duration-200"
+              className="font-sans text-[10px] tracking-[0.2em] uppercase text-hv-sage hover:text-hv-charcoal transition-colors duration-200 mt-1"
             >
               Start over
             </button>
