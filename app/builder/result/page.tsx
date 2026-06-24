@@ -240,7 +240,7 @@ export default function ResultPage() {
           {/* Confirmation line */}
           {localState.email && (
             <p className="font-sans text-hv-sage text-sm text-center mb-12 max-w-md mx-auto leading-relaxed">
-              We have sent your vision to {localState.email}. We cannot wait to show you in person.
+              We have your email at {localState.email} and will be in touch soon. We cannot wait to show you in person.
             </p>
           )}
           {!localState.email && <div className="mb-12" />}
