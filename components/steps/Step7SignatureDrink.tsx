@@ -22,10 +22,10 @@ export default function Step7SignatureDrink() {
           Step 7
         </p>
         <h1 className="font-serif font-light text-3xl sm:text-4xl text-hv-charcoal leading-snug mb-3">
-          Every great reception has a signature drink.
+          If your wedding had a signature drink, what would it be?
         </h1>
         <p className="font-sans text-hv-sage text-sm sm:text-base leading-relaxed mb-10 max-w-md mx-auto">
-          What&apos;s yours? We&apos;ll have it waiting for you.
+          Don&apos;t overthink it. This one&apos;s just for fun.
         </p>
 
         <div className="mb-10 text-left">

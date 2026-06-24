@@ -5,12 +5,12 @@ import { useState } from "react";
 import { setBuilderState } from "@/lib/builder-state";
 import StepShell from "@/components/StepShell";
 
-const vibes = [
-  { value: "romantic_garden", label: "Romantic garden party", descriptor: "Soft, lush, and full of bloom" },
-  { value: "rustic_elegant", label: "Rustic and elevated", descriptor: "Natural textures, candlelight, warmth" },
-  { value: "modern_clean", label: "Modern and refined", descriptor: "Clean lines, intentional, understated" },
-  { value: "classic_traditional", label: "Classic and timeless", descriptor: "Formal, polished, enduring" },
-  { value: "whimsical", label: "Whimsical and free", descriptor: "Unexpected, joyful, one of a kind" },
+const seasons = [
+  { value: "spring", label: "Spring", descriptor: "April – May · Blooming, soft, and bright" },
+  { value: "summer", label: "Summer", descriptor: "June – August · Lush, golden, and warm" },
+  { value: "fall", label: "Fall", descriptor: "September – November · Rich color, crisp air" },
+  { value: "winter", label: "Winter", descriptor: "December – March · Quiet, candlelit, intimate" },
+  { value: "unsure", label: "Not sure yet", descriptor: "We'll help you find your perfect time" },
 ];
 
 export default function Step5Vibe() {
@@ -19,7 +19,7 @@ export default function Step5Vibe() {
 
   function confirm() {
     if (!selected) return;
-    setBuilderState({ reception_vibe: selected });
+    setBuilderState({ season: selected });
     router.push("/builder/6");
   }
 
@@ -30,26 +30,26 @@ export default function Step5Vibe() {
           Step 5
         </p>
         <h1 className="font-serif font-light text-3xl sm:text-4xl text-hv-charcoal leading-snug mb-3">
-          What feeling do you want your reception to have?
+          What time of year speaks to you?
         </h1>
         <p className="font-sans text-hv-sage text-sm sm:text-base leading-relaxed mb-10 max-w-md mx-auto">
-          Choose the atmosphere that feels most like you as a couple.
+          Each season transforms the property into something entirely different.
         </p>
 
         <div className="flex flex-col gap-3 mb-10">
-          {vibes.map((v) => (
+          {seasons.map((s) => (
             <button
-              key={v.value}
-              onClick={() => setSelected(v.value)}
+              key={s.value}
+              onClick={() => setSelected(s.value)}
               className={`w-full flex flex-col items-start px-6 py-5 border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-hv-tan text-left ${
-                selected === v.value
+                selected === s.value
                   ? "border-hv-green bg-hv-green text-white"
                   : "border-hv-linen bg-white text-hv-charcoal hover:border-hv-tan"
               }`}
             >
-              <span className="font-serif font-light text-lg sm:text-xl leading-snug">{v.label}</span>
-              <span className={`font-sans text-[10px] tracking-[0.2em] uppercase mt-1 ${selected === v.value ? "text-white/70" : "text-hv-sage"}`}>
-                {v.descriptor}
+              <span className="font-serif font-light text-lg sm:text-xl leading-snug">{s.label}</span>
+              <span className={`font-sans text-[10px] tracking-[0.2em] uppercase mt-1 ${selected === s.value ? "text-white/70" : "text-hv-sage"}`}>
+                {s.descriptor}
               </span>
             </button>
           ))}

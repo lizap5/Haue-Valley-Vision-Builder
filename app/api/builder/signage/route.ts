@@ -1,17 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
 import { BuilderState } from "@/lib/builder-state";
 
 export const maxDuration = 60;
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
 const FLORAL_COLORS: Record<string, { bg: string; text: string; accent: string }> = {
-  soft_neutral:     { bg: "#F2EDE4", text: "#3D3228", accent: "#B8A89A" },
-  romantic_warm:    { bg: "#EDD5CC", text: "#5C2D3A", accent: "#C4857A" },
-  wildflower_earthy:{ bg: "#E8C9A8", text: "#4A3020", accent: "#B8895A" },
-  bold_rich:        { bg: "#2C1B2E", text: "#F0E8F0", accent: "#9B7EA8" },
-  fresh_green:      { bg: "#D4E2D4", text: "#2A3E2A", accent: "#6B8F6B" },
+  roses:        { bg: "#EDD5CC", text: "#5C2D3A", accent: "#C4857A" },
+  greenery:     { bg: "#D4E2D4", text: "#2A3E2A", accent: "#6B8F6B" },
+  white_blooms: { bg: "#F2EDE4", text: "#3D3228", accent: "#B8A89A" },
+  hydrangea:    { bg: "#D8E0EC", text: "#2A3550", accent: "#7B92B8" },
 };
 
 function buildDrinkPrompt(drink: string): string {
@@ -27,6 +23,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "Missing OpenAI key" });
     }
 
+    const { default: OpenAI } = await import("openai");
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
     const response = await openai.images.generate({
       model: "dall-e-3",
       prompt: buildDrinkPrompt(drink),
@@ -40,8 +39,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "No image returned" });
     }
 
-    const florals = state.florals ?? "soft_neutral";
-    const colors = FLORAL_COLORS[florals] ?? FLORAL_COLORS.soft_neutral;
+    const floralStyle = state.floral_style ?? "white_blooms";
+    const colors = FLORAL_COLORS[floralStyle] ?? FLORAL_COLORS.white_blooms;
 
     return NextResponse.json({
       ok: true,

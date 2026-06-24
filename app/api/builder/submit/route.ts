@@ -18,37 +18,35 @@ const PHOTO_STYLE_LABELS: Record<string, string> = {
   moody: "Dark and Moody",
 };
 
+const ROOM_FEELING_LABELS: Record<string, string> = {
+  romantic: "Swept away / Romantic",
+  elegant: "Elevated / Elegant",
+  rustic: "Right at home / Rustic",
+  dramatic: "Amazed / Dramatic",
+  garden: "Enchanted / Garden",
+};
+
+const FLORAL_STYLE_LABELS: Record<string, string> = {
+  roses: "Full and lush — roses and peonies",
+  greenery: "Fresh and organic — lush greenery",
+  white_blooms: "Clean and ethereal — white blooms",
+  hydrangea: "Garden and abundant — hydrangea",
+};
+
 const CEREMONY_LABELS: Record<string, string> = {
-  outdoor_stone: "Outdoor stone space",
-  indoor: "Indoor",
+  stone_wall: "The Stone Wall",
+  forest_view: "The Forest View",
+  indoor_fireplace: "Indoor by the Fireplace",
   unsure: "Undecided",
 };
 
-const VIBE_LABELS: Record<string, string> = {
-  romantic_garden: "Romantic garden party",
-  rustic_elegant: "Rustic and elevated",
-  modern_clean: "Modern and refined",
-  classic_traditional: "Classic and timeless",
-  whimsical: "Whimsical and free",
-};
-
-const FLORAL_LABELS: Record<string, string> = {
-  soft_neutral: "Soft and neutral",
-  romantic_warm: "Romantic and warm",
-  wildflower_earthy: "Wildflower and earthy",
-  bold_rich: "Bold and rich",
-  fresh_green: "Fresh and green",
-};
-
 const PRIORITY_LABELS: Record<string, string> = {
-  food_drink: "Amazing food and drinks",
-  photography: "Stunning photography",
-  dance_party: "A dance floor that never empties",
-  guest_experience: "Guest experience above everything",
-  decor_florals: "Show-stopping decor and florals",
-  stress_free: "A stress-free day",
-  intimate_moments: "Quiet intimate moments",
-  all_inclusive: "Having everything handled for us",
+  photographs: "Photographs we'll look at forever",
+  guest_experience: "Every guest feels taken care of",
+  atmosphere: "A space that takes your breath away",
+  stress_free: "A day we actually get to enjoy",
+  food_drink: "Food and drinks that wow",
+  all_inclusive: "Everything handled, start to finish",
 };
 
 const GUEST_COUNT_LABELS: Record<number, string> = {
@@ -67,31 +65,28 @@ export async function POST(req: NextRequest) {
 
     const state: BuilderState = await req.json();
 
-    const priorities = (state.priorities ?? [])
-      .map((p) => PRIORITY_LABELS[p] ?? p);
-
     const fields: Record<string, unknown> = {
       "Couple Names":             state.couple_names ?? "",
       "Email":                    state.email ?? "",
       "Wedding Date":             state.wedding_date ?? "",
-      "Season":                   SEASON_LABELS[state.season ?? ""] ?? "",
-      "Guest Count":              GUEST_COUNT_LABELS[state.guest_count ?? 0] ?? "",
       "Photo Style":              PHOTO_STYLE_LABELS[state.photography_style ?? ""] ?? "",
+      "Room Feeling":             ROOM_FEELING_LABELS[state.room_feeling ?? ""] ?? "",
+      "Floral Style":             FLORAL_STYLE_LABELS[state.floral_style ?? ""] ?? "",
+      "Colors Chosen":            (state.colors_chosen ?? []).join(", "),
+      "Season":                   SEASON_LABELS[state.season ?? ""] ?? "",
       "Ceremony Location":        CEREMONY_LABELS[state.ceremony_location ?? ""] ?? "",
-      "Reception Vibe":           VIBE_LABELS[state.reception_vibe ?? ""] ?? "",
-      "Florals and Colors":       FLORAL_LABELS[state.florals ?? ""] ?? "",
       "Signature Drink":          state.signature_drink ?? "",
+      "The One Thing":            PRIORITY_LABELS[state.priority ?? ""] ?? "",
+      "Guest Count":              GUEST_COUNT_LABELS[state.guest_count ?? 0] ?? "",
+      "All-Inclusive Interest":   state.all_inclusive_intent ?? false,
       "Budget Range":             state.budget_range ?? "",
       "How They Heard About Us":  state.heard_about ?? "",
-      "Priorities":               priorities,
-      "All-Inclusive Interest":   state.all_inclusive_intent ?? false,
       "Additional Notes":         state.additional_notes ?? "",
       "Tour Status":              "Upcoming",
       "Vision Builder Completed": true,
       "Submitted At":             new Date().toISOString(),
     };
 
-    // Strip out empty strings so Airtable doesn't reject mismatched field types
     const cleanFields = Object.fromEntries(
       Object.entries(fields).filter(([, v]) => v !== "" && v !== null && v !== undefined)
     );

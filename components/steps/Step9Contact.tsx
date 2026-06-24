@@ -5,6 +5,14 @@ import { useState } from "react";
 import { setBuilderState } from "@/lib/builder-state";
 import StepShell from "@/components/StepShell";
 
+const guestRanges = [
+  { value: 50, label: "Under 50" },
+  { value: 100, label: "50 – 100" },
+  { value: 150, label: "100 – 150" },
+  { value: 200, label: "150 – 200" },
+  { value: 201, label: "200+" },
+];
+
 export default function Step9Contact() {
   const router = useRouter();
   const [names, setNames] = useState("");
@@ -13,20 +21,30 @@ export default function Step9Contact() {
   const [notes, setNotes] = useState("");
   const [budget, setBudget] = useState("");
   const [heardAbout, setHeardAbout] = useState("");
+  const [guestCount, setGuestCount] = useState<number | null>(null);
+  const [allInclusive, setAllInclusive] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   function validate() {
     const e: Record<string, string> = {};
     if (!names.trim()) e.names = "Please enter your names.";
     if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = "Please enter a valid email.";
-    if (!notes.trim()) e.notes = "Please share anything that helps us prepare for your tour.";
     return e;
   }
 
   function confirm() {
     const e = validate();
     if (Object.keys(e).length) { setErrors(e); return; }
-    setBuilderState({ couple_names: names.trim(), email: email.trim(), wedding_date: date.trim(), additional_notes: notes.trim(), budget_range: budget.trim(), heard_about: heardAbout.trim() });
+    setBuilderState({
+      couple_names: names.trim(),
+      email: email.trim(),
+      wedding_date: date.trim(),
+      additional_notes: notes.trim(),
+      budget_range: budget.trim(),
+      heard_about: heardAbout.trim(),
+      guest_count: guestCount ?? undefined,
+      all_inclusive_intent: allInclusive,
+    });
     router.push("/builder/result");
   }
 
@@ -79,6 +97,28 @@ export default function Step9Contact() {
           </div>
 
           <div>
+            <p className="font-sans text-[9px] tracking-[0.25em] uppercase text-hv-sage mb-2">
+              Approximate guest count (optional)
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {guestRanges.map((r) => (
+                <button
+                  key={r.value}
+                  type="button"
+                  onClick={() => setGuestCount(guestCount === r.value ? null : r.value)}
+                  className={`px-3 py-2 border text-center font-sans text-[11px] tracking-[0.1em] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-hv-tan ${
+                    guestCount === r.value
+                      ? "border-hv-green bg-hv-green text-white"
+                      : "border-hv-linen bg-white text-hv-charcoal hover:border-hv-tan"
+                  }`}
+                >
+                  {r.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
             <input
               type="text"
               placeholder="Budget range (optional, e.g. $15,000 – $20,000)"
@@ -106,8 +146,29 @@ export default function Step9Contact() {
               rows={4}
               className={`${inputClass} resize-none`}
             />
-            {errors.notes && <p className="font-sans text-[11px] text-red-500 mt-1 pl-1">{errors.notes}</p>}
           </div>
+
+          <label className="flex items-start gap-3 cursor-pointer group">
+            <button
+              type="button"
+              role="checkbox"
+              aria-checked={allInclusive}
+              onClick={() => setAllInclusive(!allInclusive)}
+              className={`mt-0.5 w-5 h-5 shrink-0 border flex items-center justify-center transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-hv-tan ${
+                allInclusive ? "border-hv-green bg-hv-green" : "border-hv-linen bg-white group-hover:border-hv-tan"
+              }`}
+            >
+              {allInclusive && <span className="block w-2.5 h-2.5 bg-white" />}
+            </button>
+            <div>
+              <p className="font-sans text-sm text-hv-charcoal leading-snug">
+                I&apos;m interested in all-inclusive packages
+              </p>
+              <p className="font-sans text-[10px] tracking-[0.1em] text-hv-sage mt-0.5">
+                Catering, florals, coordination, and more — handled for you
+              </p>
+            </div>
+          </label>
         </div>
 
         <button

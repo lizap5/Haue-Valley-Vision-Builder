@@ -5,12 +5,11 @@ import { useState } from "react";
 import { setBuilderState } from "@/lib/builder-state";
 import StepShell from "@/components/StepShell";
 
-const seasons = [
-  { value: "spring", label: "Spring", detail: "April – May" },
-  { value: "summer", label: "Summer", detail: "June – August" },
-  { value: "fall", label: "Fall", detail: "September – November" },
-  { value: "winter", label: "Winter", detail: "December – March" },
-  { value: "unsure", label: "Not sure yet", detail: "" },
+const floralStyles = [
+  { value: "roses", label: "Full and lush", descriptor: "Roses, peonies, and romantic blooms" },
+  { value: "greenery", label: "Fresh and organic", descriptor: "Lush greenery, ferns, and natural textures" },
+  { value: "white_blooms", label: "Clean and ethereal", descriptor: "White blooms, ivory, and soft neutrals" },
+  { value: "hydrangea", label: "Garden and abundant", descriptor: "Hydrangea, wildflowers, and loose arrangements" },
 ];
 
 export default function Step3Season() {
@@ -19,7 +18,7 @@ export default function Step3Season() {
 
   function confirm() {
     if (!selected) return;
-    setBuilderState({ season: selected });
+    setBuilderState({ floral_style: selected });
     router.push("/builder/4");
   }
 
@@ -30,29 +29,27 @@ export default function Step3Season() {
           Step 3
         </p>
         <h1 className="font-serif font-light text-3xl sm:text-4xl text-hv-charcoal leading-snug mb-3">
-          What time of year are you thinking?
+          What does your floral vision feel like?
         </h1>
         <p className="font-sans text-hv-sage text-sm sm:text-base leading-relaxed mb-10 max-w-md mx-auto">
-          Each season transforms the property in a different way.
+          Florals set the tone more than almost anything else.
         </p>
 
         <div className="flex flex-col gap-3 mb-10">
-          {seasons.map((s) => (
+          {floralStyles.map((f) => (
             <button
-              key={s.value}
-              onClick={() => setSelected(s.value)}
-              className={`w-full flex items-center justify-between px-7 py-5 border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-hv-tan ${
-                selected === s.value
+              key={f.value}
+              onClick={() => setSelected(f.value)}
+              className={`w-full flex flex-col items-start px-6 py-5 border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-hv-tan text-left ${
+                selected === f.value
                   ? "border-hv-green bg-hv-green text-white"
                   : "border-hv-linen bg-white text-hv-charcoal hover:border-hv-tan"
               }`}
             >
-              <span className="font-serif font-light text-xl">{s.label}</span>
-              {s.detail && (
-                <span className={`font-sans text-[10px] tracking-[0.2em] uppercase ${selected === s.value ? "text-white/70" : "text-hv-sage"}`}>
-                  {s.detail}
-                </span>
-              )}
+              <span className="font-serif font-light text-lg sm:text-xl leading-snug">{f.label}</span>
+              <span className={`font-sans text-[10px] tracking-[0.2em] uppercase mt-1 ${selected === f.value ? "text-white/70" : "text-hv-sage"}`}>
+                {f.descriptor}
+              </span>
             </button>
           ))}
         </div>
