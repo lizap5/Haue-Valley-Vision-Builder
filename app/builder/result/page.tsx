@@ -186,6 +186,12 @@ export default function ResultPage() {
       .then(([visionData, photoData]) => {
         setContent(visionData);
         setPhotos(photoData.photos ?? []);
+        // Fire-and-forget: send vision email once content is ready
+        fetch("/api/builder/email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ state: s, content: visionData }),
+        }).catch(() => {});
       })
       .catch(() => setError(true));
 
