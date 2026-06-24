@@ -27,10 +27,10 @@ const ROOM_FEELING_LABELS: Record<string, string> = {
 };
 
 const FLORAL_STYLE_LABELS: Record<string, string> = {
-  roses: "Full and lush — roses and peonies",
-  greenery: "Fresh and organic — lush greenery",
-  white_blooms: "Clean and ethereal — white blooms",
-  hydrangea: "Garden and abundant — hydrangea",
+  roses: "Full and lush — roses, peonies, and romantic blooms",
+  greenery: "Fresh and organic — lush greenery, ferns, and natural textures",
+  white_blooms: "Clean and ethereal — white blooms, ivory, and soft neutrals",
+  hydrangea: "Garden and abundant — hydrangea, wildflowers, and loose arrangements",
 };
 
 const CEREMONY_LABELS: Record<string, string> = {
