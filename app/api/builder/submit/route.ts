@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
       "Additional Notes":         state.additional_notes ?? "",
       "Tour Status":              "Upcoming",
       "Vision Builder Completed": true,
-      "Submitted At":             new Date().toISOString(),
+      "Submitted At":             new Date().toISOString().split("T")[0],
     };
 
     const cleanFields = Object.fromEntries(
