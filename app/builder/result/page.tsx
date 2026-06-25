@@ -192,6 +192,18 @@ export default function ResultPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ state: s, content: visionData }),
         }).catch(() => {});
+        // Fire-and-forget: save vision copy + style name to Airtable
+        if (s.email) {
+          fetch("/api/builder/update-vision", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email:       s.email,
+              vision_copy: visionData.vision,
+              style_name:  visionData.style_name,
+            }),
+          }).catch(() => {});
+        }
       })
       .catch(() => setError(true));
 
