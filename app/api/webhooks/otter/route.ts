@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "crypto";
 import Anthropic from "@anthropic-ai/sdk";
 
-const AIRTABLE_API_KEY = process.env.AIRTABLE_API_KEY!;
-const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID!;
-const TOURS_TABLE_ID   = process.env.AIRTABLE_TOURS_TABLE_ID!;
-const OTTER_SIGNING_KEY = process.env.OTTER_WEBHOOK_SIGNING_KEY ?? "";
+const AIRTABLE_API_KEY        = process.env.AIRTABLE_API_KEY!;
+const AIRTABLE_BASE_ID        = process.env.AIRTABLE_BASE_ID!;
+const TOURS_TABLE_ID          = process.env.AIRTABLE_TOURS_TABLE_ID!;
+const EMAIL_DRAFTS_TABLE_ID   = process.env.AIRTABLE_EMAIL_DRAFTS_TABLE_ID!;
+const OTTER_SIGNING_KEY       = process.env.OTTER_WEBHOOK_SIGNING_KEY ?? "";
 
 const client = new Anthropic();
 
@@ -14,7 +15,7 @@ const client = new Anthropic();
 // ---------------------------------------------------------------------------
 
 function verifySignature(rawBody: string, header: string | null): boolean {
-  if (!OTTER_SIGNING_KEY) return true; // skip if not configured yet
+  if (!OTTER_SIGNING_KEY) return true;
   if (!header) return false;
   try {
     const expected = createHmac("sha256", OTTER_SIGNING_KEY).update(rawBody).digest("hex");
@@ -30,9 +31,7 @@ function verifySignature(rawBody: string, header: string | null): boolean {
 // ---------------------------------------------------------------------------
 
 interface OtterPayload {
-  meta: {
-    event: string;
-  };
+  meta: { event: string };
   data: {
     id: string;
     title?: string;
@@ -49,30 +48,48 @@ interface OtterPayload {
 // Airtable helpers
 // ---------------------------------------------------------------------------
 
-async function findRecordByEmail(email: string): Promise<string | null> {
+interface ToursRecord {
+  id: string;
+  fields: Record<string, unknown>;
+}
+
+async function findToursByEmail(email: string): Promise<ToursRecord | null> {
   const formula = encodeURIComponent(`{Email} = "${email}"`);
   const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${TOURS_TABLE_ID}?filterByFormula=${formula}&maxRecords=1&sort[0][field]=Submitted At&sort[0][direction]=desc`;
   const res = await fetch(url, { headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}` } });
   if (!res.ok) return null;
   const data = await res.json();
-  return data.records?.[0]?.id ?? null;
+  return data.records?.[0] ?? null;
 }
 
-async function findRecordByName(name: string): Promise<string | null> {
-  // Partial match on Couple Names — useful when email isn't in Otter guests
+async function findToursByName(name: string): Promise<ToursRecord | null> {
   const formula = encodeURIComponent(`FIND(LOWER("${name.toLowerCase()}"), LOWER({Couple Names})) > 0`);
   const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${TOURS_TABLE_ID}?filterByFormula=${formula}&maxRecords=1&sort[0][field]=Submitted At&sort[0][direction]=desc`;
   const res = await fetch(url, { headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}` } });
   if (!res.ok) return null;
   const data = await res.json();
-  return data.records?.[0]?.id ?? null;
+  return data.records?.[0] ?? null;
 }
 
-async function updateAirtableRecord(recordId: string, fields: Record<string, unknown>): Promise<void> {
+async function updateToursRecord(recordId: string, fields: Record<string, unknown>): Promise<void> {
   await fetch(
     `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${TOURS_TABLE_ID}/${recordId}`,
     {
       method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${AIRTABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ fields }),
+    }
+  );
+}
+
+async function createEmailDraft(fields: Record<string, unknown>): Promise<void> {
+  await fetch(
+    `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${EMAIL_DRAFTS_TABLE_ID}`,
+    {
+      method: "POST",
       headers: {
         Authorization: `Bearer ${AIRTABLE_API_KEY}`,
         "Content-Type": "application/json",
@@ -135,6 +152,97 @@ Return only valid JSON. No markdown, no explanation.`;
 }
 
 // ---------------------------------------------------------------------------
+// Claude follow-up email draft generation
+// ---------------------------------------------------------------------------
+
+interface DraftEmail {
+  subject: string;
+  body: string;
+  reviewer_notes: string;
+}
+
+async function generateFollowUpDraft(
+  insights: TourInsights,
+  tourRecord: ToursRecord
+): Promise<DraftEmail> {
+  const f = tourRecord.fields;
+  const coupleNames   = (f["Couple Names"] as string) || insights.couple_names_mentioned || "there";
+  const firstName     = coupleNames.split(/[&,]/)[0].trim();
+  const visionStyle   = (f["Room Feeling"] as string) || "";
+  const floralStyle   = (f["Floral Style"] as string) || "";
+  const season        = (f["Season"] as string) || "";
+  const ceremony      = (f["Ceremony Location"] as string) || "";
+  const priority      = (f["The One Thing"] as string) || "";
+  const drink         = (f["Signature Drink"] as string) || "";
+
+  const visionContext = [
+    visionStyle  && `Their vision builder described wanting guests to feel: ${visionStyle}`,
+    floralStyle  && `Floral style: ${floralStyle}`,
+    season       && `Season: ${season}`,
+    ceremony     && `Ceremony space preference before the tour: ${ceremony}`,
+    priority     && `The one thing that mattered most to them: ${priority}`,
+    drink        && `Signature drink they mentioned: ${drink}`,
+  ].filter(Boolean).join("\n");
+
+  const prompt = `You are drafting a follow-up email for Haue Valley Weddings, a private estate wedding venue in Pacific, MO. This email will be reviewed by the Haue Valley team before being sent to the couple.
+
+STRICT RULES — any violation means the draft is rejected:
+- Only reference information that was explicitly discussed during the tour transcript
+- You may reference vision builder details ONLY if they align with or were confirmed during the tour
+- Do not make any promises about pricing, availability, or packages
+- Do not offer or imply anything that was not discussed on the tour
+- Do not invent details, feelings, or moments not present in the transcript
+- No exclamation points
+- No words like "magical", "dream", "perfect", "stunning", "breathtaking", "unforgettable"
+- No em dashes. Use commas or periods instead.
+- Do not use the word "barn"
+- Warm but not effusive. Genuine. Like a thoughtful note from someone who just spent an hour with them.
+- Sign off as: Kristin & the Haue Valley Team
+- Plain text only — no markdown, no bullet points, no headers
+
+TOUR INSIGHTS:
+Summary: ${insights.summary}
+Spaces they liked: ${insights.spaces_liked || "not specified"}
+Spaces with concerns: ${insights.spaces_concerned || "none noted"}
+All-inclusive discussed: ${insights.all_inclusive_discussed ? "yes" : "no"}
+Key questions they asked: ${insights.key_questions || "none noted"}
+Next steps mentioned: ${insights.next_steps || "none noted"}
+Overall sentiment: ${insights.overall_sentiment}
+
+VISION BUILDER CONTEXT (only use if it came up or aligns with the tour):
+${visionContext || "No vision builder data available"}
+
+Draft a follow-up email to ${firstName}. It should:
+1. Open with one specific reference to something that happened or was said on the tour
+2. Briefly reflect back what you heard about what matters to them — only from the transcript
+3. If next steps were discussed, reference them naturally
+4. Close with an open, low-pressure invitation to reach out with questions
+5. Keep it to 3-4 short paragraphs maximum
+
+After the email, output exactly this separator on its own line:
+---REVIEWER NOTES---
+Then write 1-3 brief notes for the human reviewer flagging anything they should verify, personalize further, or be cautious about before sending. Be specific.`;
+
+  const message = await client.messages.create({
+    model: "claude-haiku-4-5-20251001",
+    max_tokens: 1000,
+    messages: [{ role: "user", content: prompt }],
+  });
+
+  const raw = (message.content[0] as { type: string; text: string }).text.trim();
+  const [emailPart, notesPart] = raw.split("---REVIEWER NOTES---");
+
+  const body    = (emailPart ?? "").trim();
+  const subject = `Thank you for touring Haue Valley, ${firstName}`;
+
+  return {
+    subject,
+    body,
+    reviewer_notes: (notesPart ?? "").trim() || "Please review before sending.",
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Sentiment → readable label
 // ---------------------------------------------------------------------------
 
@@ -165,7 +273,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  // Only handle completed conversations
   if (payload.meta?.event !== "conversation.completed") {
     return NextResponse.json({ ok: true, ignored: true });
   }
@@ -178,68 +285,84 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // Analyze transcript with Claude
+    // Analyze transcript
     const insights = await analyzeTranscript(
       transcript,
       data.title ?? "",
       data.abstract_summary ?? ""
     );
 
-    // Find the matching Airtable record
-    // Try calendar guests first, then email mentioned in transcript, then name
-    let recordId: string | null = null;
+    // Find matching Tours record (full record, not just ID)
+    let tourRecord: ToursRecord | null = null;
 
     for (const guest of data.calendar_guests ?? []) {
       if (guest.email) {
-        recordId = await findRecordByEmail(guest.email);
-        if (recordId) break;
+        tourRecord = await findToursByEmail(guest.email);
+        if (tourRecord) break;
       }
     }
 
-    if (!recordId && insights.email_mentioned) {
-      recordId = await findRecordByEmail(insights.email_mentioned);
+    if (!tourRecord && insights.email_mentioned) {
+      tourRecord = await findToursByEmail(insights.email_mentioned);
     }
 
-    if (!recordId && insights.couple_names_mentioned) {
-      // Try first name from the pair (e.g. "Emma & James" → try "Emma")
+    if (!tourRecord && insights.couple_names_mentioned) {
       const firstName = insights.couple_names_mentioned.split(/[&,]/)[0].trim();
-      if (firstName) recordId = await findRecordByName(firstName);
+      if (firstName) tourRecord = await findToursByName(firstName);
     }
 
-    // Build the Airtable update fields
-    const fields: Record<string, unknown> = {
-      "Tour Status":            "Toured",
-      "Tour Notes":             insights.summary,
-      "Spaces Liked":           insights.spaces_liked || undefined,
-      "Spaces Concerned":       insights.spaces_concerned || undefined,
-      "Key Questions":          insights.key_questions || undefined,
-      "Next Steps":             insights.next_steps || undefined,
-      "Post-Tour Sentiment":    SENTIMENT_LABELS[insights.overall_sentiment] ?? insights.overall_sentiment,
+    // Update Tours record with tour insights
+    const tourFields: Record<string, unknown> = {
+      "Tour Status":             "Toured",
+      "Tour Notes":              insights.summary,
+      "Spaces Liked":            insights.spaces_liked || undefined,
+      "Spaces Concerned":        insights.spaces_concerned || undefined,
+      "Key Questions":           insights.key_questions || undefined,
+      "Next Steps":              insights.next_steps || undefined,
+      "Post-Tour Sentiment":     SENTIMENT_LABELS[insights.overall_sentiment] ?? insights.overall_sentiment,
       "All-Inclusive Discussed": insights.all_inclusive_discussed,
-      "Otter Transcript URL":   data.url || undefined,
+      "Otter Transcript URL":    data.url || undefined,
     };
+    if (insights.guest_count_confirmed) tourFields["Guest Count Confirmed"] = insights.guest_count_confirmed;
+    if (insights.budget_confirmed)      tourFields["Budget Confirmed"]      = insights.budget_confirmed;
 
-    // Update confirmed details if they were discussed
-    if (insights.guest_count_confirmed) fields["Guest Count Confirmed"] = insights.guest_count_confirmed;
-    if (insights.budget_confirmed)       fields["Budget Confirmed"]      = insights.budget_confirmed;
-
-    // Strip undefined values
-    const cleanFields = Object.fromEntries(
-      Object.entries(fields).filter(([, v]) => v !== undefined && v !== "")
+    const cleanTourFields = Object.fromEntries(
+      Object.entries(tourFields).filter(([, v]) => v !== undefined && v !== "")
     );
 
-    if (recordId) {
-      await updateAirtableRecord(recordId, cleanFields);
-      console.log(`Otter webhook: updated Airtable record ${recordId} for conversation ${data.id}`);
+    if (tourRecord) {
+      await updateToursRecord(tourRecord.id, cleanTourFields);
+      console.log(`Otter webhook: updated Tours record ${tourRecord.id}`);
     } else {
-      console.warn(`Otter webhook: no Airtable record found for conversation ${data.id} — logging insights only`);
+      console.warn(`Otter webhook: no Tours record found for conversation ${data.id}`);
+    }
+
+    // Generate follow-up email draft and write to Email Drafts table
+    if (tourRecord && EMAIL_DRAFTS_TABLE_ID) {
+      const draft = await generateFollowUpDraft(insights, tourRecord);
+      const coupleEmail = (tourRecord.fields["Email"] as string) || insights.email_mentioned || "";
+      const coupleNames = (tourRecord.fields["Couple Names"] as string) || insights.couple_names_mentioned || "";
+
+      await createEmailDraft({
+        "Couple Names":    coupleNames,
+        "To Email":        coupleEmail,
+        "Subject":         draft.subject,
+        "Email Body":      draft.body,
+        "Tour Record ID":  tourRecord.id,
+        "Status":          "Draft",
+        "Reviewer Notes":  draft.reviewer_notes,
+        "Created":         new Date().toISOString().split("T")[0],
+      });
+
+      console.log(`Otter webhook: created email draft for ${coupleNames}`);
     }
 
     return NextResponse.json({
       ok: true,
-      matched: !!recordId,
-      recordId,
+      matched: !!tourRecord,
+      recordId: tourRecord?.id ?? null,
       sentiment: insights.overall_sentiment,
+      draftCreated: !!tourRecord && !!EMAIL_DRAFTS_TABLE_ID,
     });
   } catch (err) {
     console.error("Otter webhook processing error:", err);
