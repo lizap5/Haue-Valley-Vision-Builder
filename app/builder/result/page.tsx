@@ -340,7 +340,7 @@ export default function ResultPage() {
           <div className="flex flex-col items-center gap-4">
             {/* TODO: Replace href with Calendly booking link when available */}
             <a
-              href="https://hauevalleyweddings.com/contact"
+              href={process.env.NEXT_PUBLIC_CALENDLY_URL ?? "https://hauevalleyweddings.com/contact"}
               target="_blank"
               rel="noopener noreferrer"
               className="font-sans inline-block bg-hv-green text-white text-[11px] tracking-[0.2em] uppercase px-12 py-4 hover:bg-hv-green-dark transition-colors duration-200"
