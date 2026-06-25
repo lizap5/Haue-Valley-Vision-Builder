@@ -62,13 +62,6 @@ export async function GET(req: NextRequest) {
   const coupleParam = searchParams.get("couple");
   const dateParam   = searchParams.get("date");
 
-  // Password check
-  const password = searchParams.get("password");
-  const displayPassword = process.env.DISPLAY_PASSWORD;
-  if (displayPassword && password !== displayPassword) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   if (!coupleParam && !dateParam) {
     return NextResponse.json({ error: "Provide couple or date param" }, { status: 400 });
   }

@@ -5,6 +5,8 @@ import { useSearchParams } from "next/navigation";
 import WelcomeSign from "@/components/signage/WelcomeSign";
 import SeatingChart from "@/components/signage/SeatingChart";
 
+
+
 interface DisplayData {
   coupleNames: string;
   weddingDate: string;
@@ -20,53 +22,6 @@ const REFRESH_INTERVAL = 60000; // re-fetch data every 60s
 
 function proxied(url: string) {
   return `/api/proxy/image?url=${encodeURIComponent(url)}`;
-}
-
-// ---------------------------------------------------------------------------
-// Password gate
-// ---------------------------------------------------------------------------
-function PasswordGate({ onUnlock }: { onUnlock: (p: string) => void }) {
-  const [value, setValue] = useState("");
-  const [error, setError] = useState(false);
-
-  function submit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!value.trim()) return;
-    setError(false);
-    onUnlock(value.trim());
-  }
-
-  return (
-    <div className="min-h-screen bg-hv-charcoal flex flex-col items-center justify-center px-6">
-      <p className="font-sans text-[10px] tracking-[0.35em] uppercase text-white/50 mb-2">
-        Haue Valley
-      </p>
-      <p className="font-sans text-[9px] tracking-[0.25em] uppercase text-white/30 mb-10">
-        Display System
-      </p>
-      <form onSubmit={submit} className="flex flex-col items-center gap-4 w-full max-w-xs">
-        <input
-          type="password"
-          placeholder="Enter display password"
-          value={value}
-          onChange={(e) => { setValue(e.target.value); setError(false); }}
-          className="w-full font-sans text-base text-hv-charcoal bg-white border-0 px-5 py-4 focus:outline-none placeholder:text-hv-sage/50"
-          autoFocus
-        />
-        {error && (
-          <p className="font-sans text-[11px] tracking-[0.1em] uppercase text-red-400">
-            Incorrect password
-          </p>
-        )}
-        <button
-          type="submit"
-          className="font-sans text-[11px] tracking-[0.2em] uppercase text-white border border-white/30 px-10 py-3 hover:bg-white/10 transition-colors duration-200"
-        >
-          Enter
-        </button>
-      </form>
-    </div>
-  );
 }
 
 // ---------------------------------------------------------------------------
@@ -156,38 +111,18 @@ function DisplayPageInner() {
   const coupleParam  = searchParams.get("couple");
   const dateParam    = searchParams.get("date");
 
-  const [password, setPassword]       = useState<string | null>(null);
-  const [unlocked, setUnlocked]       = useState(false);
   const [data, setData]               = useState<DisplayData | null>(null);
   const [error, setError]             = useState<string | null>(null);
   const [slideIndex, setSlideIndex]   = useState(0);
   const [transitioning, setTransitioning] = useState(false);
-
-  // Check sessionStorage for saved password on mount
-  useEffect(() => {
-    const saved = sessionStorage.getItem("hv_display_password");
-    if (saved) { setPassword(saved); setUnlocked(true); }
-  }, []);
-
-  function handleUnlock(p: string) {
-    setPassword(p);
-    setUnlocked(true);
-    sessionStorage.setItem("hv_display_password", p);
-  }
 
   const fetchData = useCallback(async () => {
     if (!coupleParam && !dateParam) return;
     const params = new URLSearchParams();
     if (coupleParam) params.set("couple", coupleParam);
     if (dateParam)   params.set("date", dateParam);
-    if (password)    params.set("password", password);
 
     const res = await fetch(`/api/display?${params.toString()}`);
-    if (res.status === 401) {
-      setUnlocked(false);
-      sessionStorage.removeItem("hv_display_password");
-      return;
-    }
     if (!res.ok) {
       const d = await res.json();
       setError(d.error ?? "Could not load display data");
@@ -195,15 +130,14 @@ function DisplayPageInner() {
     }
     setData(await res.json());
     setError(null);
-  }, [coupleParam, dateParam, password]);
+  }, [coupleParam, dateParam]);
 
-  // Fetch on unlock and refresh every 60s
+  // Fetch on load and refresh every 60s
   useEffect(() => {
-    if (!unlocked) return;
     fetchData();
     const interval = setInterval(fetchData, REFRESH_INTERVAL);
     return () => clearInterval(interval);
-  }, [unlocked, fetchData]);
+  }, [fetchData]);
 
   // Build slide list dynamically based on available data
   const slides = data
@@ -231,8 +165,6 @@ function DisplayPageInner() {
   useEffect(() => {
     if (slides.length > 0 && slideIndex >= slides.length) setSlideIndex(0);
   }, [slides.length, slideIndex]);
-
-  if (!unlocked) return <PasswordGate onUnlock={handleUnlock} />;
 
   if (error) {
     return (
