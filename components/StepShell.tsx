@@ -1,18 +1,24 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 
 interface StepShellProps {
   step: number;
   totalSteps?: number;
+  photo?: string;
   children: React.ReactNode;
 }
 
-export default function StepShell({ step, totalSteps = 9, children }: StepShellProps) {
+export default function StepShell({ step, totalSteps = 9, photo, children }: StepShellProps) {
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, [step]);
+
   return (
     <main className="min-h-screen bg-white flex flex-col">
       {/* Header */}
-      <header className="w-full flex justify-between items-center px-8 pt-8 pb-2">
+      <header className="w-full flex justify-between items-center px-5 sm:px-8 pt-8 pb-2">
         <Link href="/builder" className="text-center">
           <p className="font-sans text-[10px] tracking-[0.35em] uppercase text-hv-green font-medium">
             Haue Valley
@@ -34,8 +40,19 @@ export default function StepShell({ step, totalSteps = 9, children }: StepShellP
         />
       </div>
 
+      {/* Step photo */}
+      {photo && (
+        <div className="w-full aspect-[4/3] sm:aspect-[16/7] overflow-hidden bg-hv-linen">
+          <img
+            src={photo}
+            alt=""
+            className="w-full h-full object-cover"
+          />
+        </div>
+      )}
+
       {/* Content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
+      <div className="flex-1 flex flex-col items-center justify-center px-6 py-10">
         {children}
       </div>
 

@@ -2,18 +2,21 @@ export type PhotographyStyle = "airy" | "moody";
 
 export interface BuilderState {
   photography_style?: PhotographyStyle;
-  guest_count?: number;
+  room_feeling?: string;
+  floral_style?: string;
+  colors_chosen?: string[];
   season?: string;
   ceremony_location?: string;
-  reception_vibe?: string;
-  florals?: string;
   signature_drink?: string;
-  priorities?: string[];
+  priority?: string;
   all_inclusive_intent?: boolean;
+  guest_count?: number;
   additional_notes?: string;
   couple_names?: string;
   wedding_date?: string;
   email?: string;
+  budget_range?: string;
+  heard_about?: string;
 }
 
 const STORAGE_KEY = "hv_builder";

@@ -30,7 +30,7 @@ export default function Step1Photography() {
   }
 
   return (
-    <StepShell step={1}>
+    <StepShell step={1} photo="/images/steps/public-7.jpeg">
       <div className="max-w-2xl w-full text-center">
         <p className="font-sans text-[10px] tracking-[0.3em] uppercase text-hv-sage mb-4">
           Step 1

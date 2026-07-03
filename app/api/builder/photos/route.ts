@@ -58,28 +58,38 @@ const SEASON_MAP: Record<string, string> = {
   winter: "Winter",
 };
 
-const FLORAL_COLOR_MAP: Record<string, string[]> = {
-  soft_neutral:    ["Ivory", "White"],
-  romantic_warm:   ["Burgundy", "Ivory"],
-  wildflower_earthy: ["Terracotta", "Gold"],
-  bold_rich:       ["Burgundy", "Teal", "Emerald"],
-  fresh_green:     ["Ivory", "White", "Emerald"],
-};
-
 const FLORAL_STYLE_MAP: Record<string, string[]> = {
-  soft_neutral:    ["White Blooms", "Roses"],
-  romantic_warm:   ["Roses", "White Blooms"],
-  wildflower_earthy: ["Greenery"],
-  bold_rich:       ["Roses", "Greenery"],
-  fresh_green:     ["White Blooms", "Greenery"],
+  roses:        ["Roses", "White Blooms"],
+  greenery:     ["Greenery"],
+  white_blooms: ["White Blooms"],
+  hydrangea:    ["White Blooms", "Greenery"],
 };
 
-const VIBE_MOOD_MAP: Record<string, string[]> = {
-  romantic_garden:     ["Romantic", "Elegant"],
-  rustic_elegant:      ["Rustic", "Elegant"],
-  modern_clean:        ["Elegant"],
-  classic_traditional: ["Elegant", "Romantic"],
-  whimsical:           ["Romantic"],
+const COLOR_TAG_MAP: Record<string, string[]> = {
+  ivory:      ["Ivory", "White"],
+  blush:      ["Ivory"],
+  champagne:  ["Gold", "Ivory"],
+  sage:       ["Emerald"],
+  dusty_rose: ["Burgundy", "Ivory"],
+  mauve:      ["Burgundy"],
+  burgundy:   ["Burgundy"],
+  wine:       ["Burgundy"],
+  terracotta: ["Terracotta"],
+  rust:       ["Terracotta", "Gold"],
+  mocha:      ["Terracotta"],
+  moss:       ["Emerald"],
+  navy:       ["Teal"],
+  plum:       ["Burgundy"],
+  forest:     ["Emerald"],
+  black:      [],
+};
+
+const ROOM_FEELING_MOOD_MAP: Record<string, string[]> = {
+  romantic: ["Romantic"],
+  elegant:  ["Elegant"],
+  rustic:   ["Rustic"],
+  dramatic: ["Elegant", "Romantic"],
+  garden:   ["Romantic", "Rustic"],
 };
 
 function scoreRecord(record: AirtableRecord, state: BuilderState): number {
@@ -90,20 +100,21 @@ function scoreRecord(record: AirtableRecord, state: BuilderState): number {
   const seasonTag = SEASON_MAP[state.season ?? ""];
   if (seasonTag && fields["Season Tags"]?.includes(seasonTag)) score += 3;
 
-  // Color tags: +2 per match
-  const colorTags = FLORAL_COLOR_MAP[state.florals ?? ""] ?? [];
+  // Color tags from chosen colors: +2 per match
+  const chosenColors = state.colors_chosen ?? [];
+  const colorTags = [...new Set(chosenColors.flatMap((c) => COLOR_TAG_MAP[c] ?? []))];
   for (const tag of colorTags) {
     if (fields["Color Tags"]?.includes(tag)) score += 2;
   }
 
   // Floral style tags: +2 per match
-  const floralTags = FLORAL_STYLE_MAP[state.florals ?? ""] ?? [];
+  const floralTags = FLORAL_STYLE_MAP[state.floral_style ?? ""] ?? [];
   for (const tag of floralTags) {
     if (fields["Floral Style Tags"]?.includes(tag)) score += 2;
   }
 
-  // Vibe/mood tags: +2 per match
-  const vibeTags = VIBE_MOOD_MAP[state.reception_vibe ?? ""] ?? [];
+  // Room feeling / mood tags: +2 per match
+  const vibeTags = ROOM_FEELING_MOOD_MAP[state.room_feeling ?? ""] ?? [];
   for (const tag of vibeTags) {
     if (fields["Mood Tags"]?.includes(tag)) score += 2;
   }

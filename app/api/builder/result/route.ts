@@ -13,36 +13,34 @@ const SEASON_LABELS: Record<string, string> = {
 };
 
 const CEREMONY_LABELS: Record<string, string> = {
-  outdoor_stone: "Outdoor stone ceremony space (open air)",
-  indoor: "Indoor ceremony",
+  stone_wall: "The Stone Wall (outdoor, open sky)",
+  forest_view: "The Forest View (tree canopy, dappled light)",
+  indoor_fireplace: "Indoor by the Fireplace (warm and sheltered)",
   unsure: "Not yet decided",
 };
 
-const VIBE_LABELS: Record<string, string> = {
-  romantic_garden: "Romantic garden party",
-  rustic_elegant: "Rustic and elevated",
-  modern_clean: "Modern and refined",
-  classic_traditional: "Classic and timeless",
-  whimsical: "Whimsical and free",
+const ROOM_FEELING_LABELS: Record<string, string> = {
+  romantic: "Swept away / Romantic",
+  elegant: "Elevated / Elegant",
+  rustic: "Right at home / Rustic",
+  dramatic: "Amazed / Dramatic",
+  garden: "Enchanted / Garden",
 };
 
-const FLORAL_LABELS: Record<string, string> = {
-  soft_neutral: "Soft and neutral: ivory, blush, white / peonies, ranunculus, garden roses",
-  romantic_warm: "Romantic and warm: blush, mauve, burgundy / roses, dahlias, sweet peas",
-  wildflower_earthy: "Wildflower and earthy: cream, peach, terracotta / cosmos, chamomile, dried grasses",
-  bold_rich: "Bold and rich: deep plum, burgundy, forest green / garden roses, anemones, eucalyptus",
-  fresh_green: "Fresh and green: white, ivory, lush greenery / hydrangeas, ferns, lily of the valley",
+const FLORAL_STYLE_LABELS: Record<string, string> = {
+  roses: "Full and lush: roses, peonies, and romantic blooms",
+  greenery: "Fresh and organic: lush greenery, ferns, and natural textures",
+  white_blooms: "Clean and ethereal: white blooms, ivory, and soft neutrals",
+  hydrangea: "Garden and abundant: hydrangea, wildflowers, and loose arrangements",
 };
 
 const PRIORITY_LABELS: Record<string, string> = {
-  food_drink: "Amazing food and drinks",
-  photography: "Stunning photography",
-  dance_party: "A dance floor that never empties",
-  guest_experience: "Guest experience above everything",
-  decor_florals: "Show-stopping decor and florals",
-  stress_free: "A stress-free day",
-  intimate_moments: "Quiet, intimate moments",
-  all_inclusive: "Having everything handled for us",
+  photographs: "Photographs we'll look at forever",
+  guest_experience: "Every guest feels taken care of",
+  atmosphere: "A space that takes your breath away",
+  stress_free: "A day we actually get to enjoy",
+  food_drink: "Food and drinks that wow",
+  all_inclusive: "Everything handled, start to finish",
 };
 
 function buildPrompt(state: BuilderState): string {
@@ -55,12 +53,10 @@ function buildPrompt(state: BuilderState): string {
     : state.guest_count === 201 ? "over 200 guests"
     : "an intimate group";
 
-  const priorities = (state.priorities ?? [])
-    .map((p) => PRIORITY_LABELS[p] ?? p)
-    .join(", ");
-
-  const isAllInclusive = state.all_inclusive_intent ?? false;
-  const wantsStressFree = (state.priorities ?? []).includes("stress_free");
+  const priority = state.priority ? (PRIORITY_LABELS[state.priority] ?? state.priority) : "Not specified";
+  const isAllInclusive = state.all_inclusive_intent ?? state.priority === "all_inclusive";
+  const wantsStressFree = state.priority === "stress_free";
+  const colorsLabel = (state.colors_chosen ?? []).join(", ") || "Not specified";
 
   const aiParagraph = isAllInclusive
     ? `Haue Valley's all-inclusive package means every detail above is handled for you: catering, florals, coordination, and more. You walk in and simply enjoy the day you pictured.`
@@ -86,17 +82,20 @@ ABOUT THE COUPLE:
 - Guest count: ${guestLabel}
 - Season: ${SEASON_LABELS[state.season ?? "unsure"] ?? "Not specified"}
 - Wedding date (typed by couple): ${state.wedding_date || "Not provided"}
+- How they want guests to feel: ${ROOM_FEELING_LABELS[state.room_feeling ?? ""] ?? "Not specified"}
+- Floral vision: ${FLORAL_STYLE_LABELS[state.floral_style ?? ""] ?? "Not specified"}
+- Colors chosen: ${colorsLabel}
 - Ceremony location: ${CEREMONY_LABELS[state.ceremony_location ?? "unsure"] ?? "Not specified"}
-- Reception vibe: ${VIBE_LABELS[state.reception_vibe ?? ""] ?? "Not specified"}
-- Florals and colors: ${FLORAL_LABELS[state.florals ?? ""] ?? "Not specified"}
 - Photography style: ${state.photography_style === "airy" ? "Light and airy" : state.photography_style === "moody" ? "Dark and moody" : "Not specified"}
-- What matters most: ${priorities || "Not specified"}
+- The one thing that matters most: ${priority}
 - Signature drink: ${state.signature_drink || "Not specified"}
 - Additional notes from couple: ${state.additional_notes || "None"}
 
 If the couple provided a specific wedding date or month, use that exact month or timeframe when referencing their day. If no specific date was given, use the season label instead. Never contradict the date they typed.
 
-Write exactly three paragraphs of vision copy. Each paragraph is two to four sentences. Paint a picture of their day using the details above. Be specific. Reference their actual choices. Do not summarize. Do not list. Make them feel it.
+First, output a 2–4 word style name for this couple's wedding vision. It should be poetic and specific, not generic. Examples: Garden Romance in Bloom, Candlelit Forest Elegance, Moody Autumn Warmth, Soft Ivory and Stone. No quotation marks. Then output this separator on its own line:
+===
+Then write exactly three paragraphs of vision copy. Each paragraph is two to four sentences. Paint a picture of their day using the details above. Be specific. Reference their actual choices. Do not summarize. Do not list. Make them feel it.
 
 After the three paragraphs, output exactly this separator on its own line:
 ---
@@ -104,13 +103,14 @@ Then output the all-inclusive paragraph exactly as written below. Do not rewrite
 ${aiParagraph}`;
 }
 
-function fallbackVision(state: BuilderState): { heading: string; vision: string; all_inclusive_paragraph: string } {
+function fallbackVision(state: BuilderState): { heading: string; style_name: string; vision: string; all_inclusive_paragraph: string } {
   const names = state.couple_names || "You two";
-  const isAllInclusive = state.all_inclusive_intent ?? false;
-  const wantsStressFree = (state.priorities ?? []).includes("stress_free");
+  const isAllInclusive = state.all_inclusive_intent ?? state.priority === "all_inclusive";
+  const wantsStressFree = state.priority === "stress_free";
 
   return {
     heading: `${names}, this is your Haue Valley wedding.`,
+    style_name: "Your Haue Valley Vision",
     vision: [
       "Picture the property on your day. Florals that reflect exactly who you are. Guests who feel the care in every corner.",
       "Your ceremony sets the tone, and the evening that follows carries it forward. Every detail considered. Nothing that feels like filler.",
@@ -142,13 +142,15 @@ export async function POST(req: NextRequest) {
     });
 
     const raw = (message.content[0] as { type: string; text: string }).text.trim();
-    const [visionPart, aiPart] = raw.split(/\n---\n/);
-
-    const vision = (visionPart ?? "").trim().replace(/^#+\s.+\n?/gm, "").trim();
+    const [styleAndVision, aiPart] = raw.split(/\n---\n/);
+    const [styleNameRaw, visionPart] = (styleAndVision ?? "").split(/\n===\n/);
+    const style_name = (styleNameRaw ?? "").trim().replace(/^#+\s/, "") || fallbackVision(state).style_name;
+    const vision = (visionPart ?? styleAndVision ?? "").trim().replace(/^#+\s.+\n?/gm, "").trim();
     const all_inclusive_paragraph = (aiPart ?? "").trim() || fallbackVision(state).all_inclusive_paragraph;
 
     return NextResponse.json({
       heading: `${names}, this is your Haue Valley wedding.`,
+      style_name,
       vision,
       all_inclusive_paragraph,
     });
