@@ -121,7 +121,7 @@ export function buildVisionEmail(state: BuilderState, content: VisionContent): s
           <!-- CTA button -->
           <tr>
             <td align="center" style="padding:0 48px 48px;">
-              <a href="https://hauevalleyweddings.com/contact"
+              <a href="${process.env.NEXT_PUBLIC_CALENDLY_URL ?? "https://hauevalleyweddings.com/contact"}"
                  style="display:inline-block;font-family:Arial,Helvetica,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:${COLORS.white};background-color:${COLORS.green};text-decoration:none;padding:16px 40px;">
                 Schedule Your Tour
               </a>
