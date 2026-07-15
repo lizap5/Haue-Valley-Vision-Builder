@@ -21,7 +21,7 @@ const options: { value: PhotographyStyle; label: string; descriptor: string; bg:
   },
 ];
 
-export default function Step1Photography() {
+export default function StepPhotography() {
   const router = useRouter();
 
   function select(value: PhotographyStyle) {

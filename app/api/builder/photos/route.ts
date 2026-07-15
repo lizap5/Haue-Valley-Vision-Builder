@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { BuilderState } from "@/lib/builder-state";
+import { SIGNATURE_DRINKS, labelFor } from "@/lib/calculator-options";
 
 const AIRTABLE_API_KEY = process.env.AIRTABLE_API_KEY!;
 const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID!;
@@ -19,6 +20,8 @@ interface AirtableRecord {
     "Color Tags"?: string[];
     "Space Tags"?: string[];
     "Season Tags"?: string[];
+    "Vibe Tags"?: string[];
+    "Metal Tags"?: string[];
     "Floral Style Tags"?: string[];
     "Mood Tags"?: string[];
     "Drinks Tags"?: string[];
@@ -32,7 +35,13 @@ export interface ScoredPhoto {
   url: string;
   name: string;
   score: number;
+  space?: string;
 }
+
+// The three spaces every mood board must include, in display order.
+// These must match the Space Tags values in the Airtable image library.
+const REQUIRED_SPACES = ["Ceremony", "Reception", "Upper Patio"] as const;
+const BAR_SIGN_SPACE = "Bar Sign";
 
 function driveToDirectUrl(url: string): string {
   const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
@@ -58,65 +67,62 @@ const SEASON_MAP: Record<string, string> = {
   winter: "Winter",
 };
 
-const FLORAL_STYLE_MAP: Record<string, string[]> = {
-  roses:        ["Roses", "White Blooms"],
-  greenery:     ["Greenery"],
-  white_blooms: ["White Blooms"],
-  hydrangea:    ["White Blooms", "Greenery"],
+// Vibe values -> Airtable "Vibe Tags" values (exact calculator names)
+const VIBE_TAG_MAP: Record<string, string> = {
+  garden_party:         "Garden Party",
+  timeless_estate:      "Timeless Estate",
+  european_summer:      "European Summer",
+  moody_romance:        "Moody Romance",
+  colorful_celebration: "Colorful Celebration",
+  something_blue:       "Something Blue",
+  elevated_western:     "Elevated Western",
+  editorial_romance:    "Editorial Romance",
 };
 
-const COLOR_TAG_MAP: Record<string, string[]> = {
-  ivory:      ["Ivory", "White"],
-  blush:      ["Ivory"],
-  champagne:  ["Gold", "Ivory"],
-  sage:       ["Emerald"],
-  dusty_rose: ["Burgundy", "Ivory"],
-  mauve:      ["Burgundy"],
-  burgundy:   ["Burgundy"],
-  wine:       ["Burgundy"],
-  terracotta: ["Terracotta"],
-  rust:       ["Terracotta", "Gold"],
-  mocha:      ["Terracotta"],
-  moss:       ["Emerald"],
-  navy:       ["Teal"],
-  plum:       ["Burgundy"],
-  forest:     ["Emerald"],
-  black:      [],
-};
-
-const ROOM_FEELING_MOOD_MAP: Record<string, string[]> = {
-  romantic: ["Romantic"],
-  elegant:  ["Elegant"],
-  rustic:   ["Rustic"],
-  dramatic: ["Elegant", "Romantic"],
-  garden:   ["Romantic", "Rustic"],
+// Linen color values -> Airtable "Color Tags" values
+const LINEN_COLOR_TAG_MAP: Record<string, string[]> = {
+  white:        ["White", "Ivory"],
+  ivory:        ["Ivory", "White"],
+  beige:        ["Beige", "Ivory"],
+  maize_yellow: ["Yellow", "Gold"],
+  blush:        ["Blush", "Ivory"],
+  dusty_rose:   ["Blush", "Burgundy"],
+  burgundy:     ["Burgundy"],
+  navy:         ["Navy", "Blue"],
+  eggplant:     ["Purple", "Burgundy"],
+  lilac:        ["Purple", "Blush"],
+  light_blue:   ["Blue"],
+  slate_blue:   ["Blue", "Navy"],
+  light_olive:  ["Green"],
+  forest_green: ["Green", "Emerald"],
+  brown:        ["Brown", "Terracotta"],
+  light_grey:   ["Grey", "White"],
+  black:        ["Black"],
 };
 
 function scoreRecord(record: AirtableRecord, state: BuilderState): number {
   const fields = record.fields;
   let score = 0;
 
+  // Vibe match is the strongest signal: +5
+  const vibeTag = VIBE_TAG_MAP[state.vibe ?? ""];
+  if (vibeTag && fields["Vibe Tags"]?.includes(vibeTag)) score += 5;
+
   // Season match: +3
   const seasonTag = SEASON_MAP[state.season ?? ""];
   if (seasonTag && fields["Season Tags"]?.includes(seasonTag)) score += 3;
 
-  // Color tags from chosen colors: +2 per match
-  const chosenColors = state.colors_chosen ?? [];
-  const colorTags = [...new Set(chosenColors.flatMap((c) => COLOR_TAG_MAP[c] ?? []))];
+  // Linen color tags: +2 per match
+  const chosen = state.linen_colors ?? state.colors_chosen ?? [];
+  const colorTags = [...new Set(chosen.flatMap((c) => LINEN_COLOR_TAG_MAP[c] ?? []))];
   for (const tag of colorTags) {
     if (fields["Color Tags"]?.includes(tag)) score += 2;
   }
 
-  // Floral style tags: +2 per match
-  const floralTags = FLORAL_STYLE_MAP[state.floral_style ?? ""] ?? [];
-  for (const tag of floralTags) {
-    if (fields["Floral Style Tags"]?.includes(tag)) score += 2;
-  }
-
-  // Room feeling / mood tags: +2 per match
-  const vibeTags = ROOM_FEELING_MOOD_MAP[state.room_feeling ?? ""] ?? [];
-  for (const tag of vibeTags) {
-    if (fields["Mood Tags"]?.includes(tag)) score += 2;
+  // Accent metal: +2
+  if (state.accent_metal) {
+    const metalTag = state.accent_metal === "gold" ? "Gold" : "Silver";
+    if (fields["Metal Tags"]?.includes(metalTag) || fields["Color Tags"]?.includes(metalTag)) score += 2;
   }
 
   return score;
@@ -147,7 +153,7 @@ async function fetchAllRecords(): Promise<AirtableRecord[]> {
 export async function POST(req: NextRequest) {
   try {
     if (!AIRTABLE_API_KEY || !AIRTABLE_BASE_ID || !AIRTABLE_TABLE_ID) {
-      return NextResponse.json({ photos: [] });
+      return NextResponse.json({ photos: [], spacePhotos: [], barSigns: [] });
     }
 
     const state: BuilderState = await req.json();
@@ -156,37 +162,89 @@ export async function POST(req: NextRequest) {
 
     const allRecords = await fetchAllRecords();
 
-    // Hard filter by photography style, then score the rest
-    const eligible = allRecords.filter((r) => {
-      const url = getImageUrl(r);
-      if (!url) return false;
-      if (moodFilter && !r.fields["Mood Tags"]?.includes(moodFilter)) return false;
+    const withUrl = allRecords.filter((r) => getImageUrl(r));
+
+    // --- Bar signs: match the couple's chosen drinks against Drinks Tags ---
+    const drinkLabels = (state.signature_drinks ?? []).map((v) => labelFor(SIGNATURE_DRINKS, v));
+    const barSigns: ScoredPhoto[] = [];
+    for (const drink of drinkLabels) {
+      const sign = withUrl.find(
+        (r) =>
+          r.fields["Space Tags"]?.includes(BAR_SIGN_SPACE) &&
+          r.fields["Drinks Tags"]?.some((t) => t.toLowerCase() === drink.toLowerCase())
+      );
+      if (sign) {
+        barSigns.push({ id: sign.id, url: getImageUrl(sign)!, name: drink, score: 0 });
+      }
+    }
+
+    // --- Style pool: everything that's not a bar sign, honoring photo style ---
+    const stylePool = withUrl.filter((r) => {
+      if (r.fields["Space Tags"]?.includes(BAR_SIGN_SPACE)) return false;
+      if (moodFilter && r.fields["Mood Tags"]?.length && !r.fields["Mood Tags"].includes(moodFilter)) return false;
       return true;
     });
 
-    const scored: ScoredPhoto[] = eligible
-      .map((r) => ({
-        id: r.id,
-        url: getImageUrl(r)!,
-        name: r.fields["Image Name"] ?? r.id,
-        score: scoreRecord(r, state),
-      }))
+    const scored = stylePool
+      .map((r) => ({ record: r, score: scoreRecord(r, state) }))
       .sort((a, b) => b.score - a.score);
 
-    // Deduplicate by score tier -- pick variety (top score, mid, lower)
-    const top = scored.slice(0, 10);
-    const picks: ScoredPhoto[] = [];
-    if (top[0]) picks.push(top[0]);
-    if (top[3]) picks.push(top[3]);
-    if (top[7]) picks.push(top[7]);
-    // Fall back to fill if not enough
-    for (let i = 0; picks.length < 3 && i < top.length; i++) {
-      if (!picks.find((p) => p.id === top[i].id)) picks.push(top[i]);
+    const used = new Set<string>();
+
+    // --- Guaranteed space slots: best-scoring photo for each required space ---
+    const spacePhotos: ScoredPhoto[] = [];
+    for (const space of REQUIRED_SPACES) {
+      const hit = scored.find(
+        (s) => !used.has(s.record.id) && s.record.fields["Space Tags"]?.includes(space)
+      );
+      if (hit) {
+        used.add(hit.record.id);
+        spacePhotos.push({
+          id: hit.record.id,
+          url: getImageUrl(hit.record)!,
+          name: hit.record.fields["Image Name"] ?? hit.record.id,
+          score: hit.score,
+          space,
+        });
+      }
     }
 
-    return NextResponse.json({ photos: picks.slice(0, 3) });
+    // --- Three more style-matched photos, spread across the score range ---
+    const remaining = scored.filter((s) => !used.has(s.record.id));
+    const stylePicks: ScoredPhoto[] = [];
+    const indices = [0, 3, 7];
+    for (const i of indices) {
+      const s = remaining[i];
+      if (s && !stylePicks.find((p) => p.id === s.record.id)) {
+        stylePicks.push({
+          id: s.record.id,
+          url: getImageUrl(s.record)!,
+          name: s.record.fields["Image Name"] ?? s.record.id,
+          score: s.score,
+        });
+      }
+    }
+    for (let i = 0; stylePicks.length < 3 && i < remaining.length; i++) {
+      const s = remaining[i];
+      if (!stylePicks.find((p) => p.id === s.record.id)) {
+        stylePicks.push({
+          id: s.record.id,
+          url: getImageUrl(s.record)!,
+          name: s.record.fields["Image Name"] ?? s.record.id,
+          score: s.score,
+        });
+      }
+    }
+
+    return NextResponse.json({
+      // Legacy key: first three images for anything still reading `photos`
+      photos: [...spacePhotos, ...stylePicks].slice(0, 3),
+      spacePhotos,
+      stylePhotos: stylePicks,
+      barSigns,
+    });
   } catch (err) {
     console.error("Photo fetch error:", err);
-    return NextResponse.json({ photos: [] });
+    return NextResponse.json({ photos: [], spacePhotos: [], stylePhotos: [], barSigns: [] });
   }
 }

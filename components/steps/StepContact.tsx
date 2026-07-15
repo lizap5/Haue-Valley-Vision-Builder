@@ -13,7 +13,7 @@ const guestRanges = [
   { value: 201, label: "200+" },
 ];
 
-export default function Step9Contact() {
+export default function StepContact() {
   const router = useRouter();
   const [names, setNames] = useState("");
   const [email, setEmail] = useState("");
@@ -51,10 +51,10 @@ export default function Step9Contact() {
   const inputClass = "w-full font-sans text-base text-hv-charcoal border border-hv-linen px-5 py-4 focus:outline-none focus:border-hv-tan placeholder:text-hv-sage/50 bg-white";
 
   return (
-    <StepShell step={9} totalSteps={9} photo="/images/steps/small-wedding-ceremony-st-louis.webp">
+    <StepShell step={11} photo="/images/steps/small-wedding-ceremony-st-louis.webp">
       <div className="max-w-md w-full text-center">
         <p className="font-sans text-[10px] tracking-[0.3em] uppercase text-hv-sage mb-4">
-          Step 9
+          Step 11
         </p>
         <h1 className="font-serif font-light text-3xl sm:text-4xl text-hv-charcoal leading-snug mb-3">
           Almost there.

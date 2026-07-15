@@ -2,12 +2,15 @@ export type PhotographyStyle = "airy" | "moody";
 
 export interface BuilderState {
   photography_style?: PhotographyStyle;
-  room_feeling?: string;
-  floral_style?: string;
-  colors_chosen?: string[];
+  vibe?: string;                 // one of VIBES values (matches calculator)
+  ceremony_location?: string;    // stone_wall | fireplace | forest_view | unsure
+  aisle_flowers?: string;        // feyre | cassian | gwen | velaris | unsure
+  arch_selection?: string;       // feyre_arch | elaine_arch | cassian_arch | gwen_arch | wooden_cross | wooden_arbor | unsure
+  linen_colors?: string[];       // up to 3 LINEN_COLORS values
+  accent_metal?: string;         // gold | silver
   season?: string;
-  ceremony_location?: string;
-  signature_drink?: string;
+  signature_drinks?: string[];   // up to 2 SIGNATURE_DRINKS values
+  alcohol_opt_out?: boolean;
   priority?: string;
   all_inclusive_intent?: boolean;
   guest_count?: number;
@@ -17,6 +20,12 @@ export interface BuilderState {
   email?: string;
   budget_range?: string;
   heard_about?: string;
+
+  // Legacy fields kept so previously saved sessions don't break
+  room_feeling?: string;
+  floral_style?: string;
+  colors_chosen?: string[];
+  signature_drink?: string;
 }
 
 const STORAGE_KEY = "hv_builder";

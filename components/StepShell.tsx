@@ -10,7 +10,7 @@ interface StepShellProps {
   children: React.ReactNode;
 }
 
-export default function StepShell({ step, totalSteps = 9, photo, children }: StepShellProps) {
+export default function StepShell({ step, totalSteps = 11, photo, children }: StepShellProps) {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [step]);

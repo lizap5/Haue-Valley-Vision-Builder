@@ -10,30 +10,30 @@ const seasons = [
   { value: "summer", label: "Summer", descriptor: "June – August · Lush, golden, and warm" },
   { value: "fall", label: "Fall", descriptor: "September – November · Rich color, crisp air" },
   { value: "winter", label: "Winter", descriptor: "December – March · Quiet, candlelit, intimate" },
-  { value: "unsure", label: "Not sure yet", descriptor: "We'll help you find your perfect time" },
+  { value: "unsure", label: "Not sure yet", descriptor: "We can talk through timing on your tour" },
 ];
 
-export default function Step5Vibe() {
+export default function StepSeason() {
   const router = useRouter();
   const [selected, setSelected] = useState<string | null>(null);
 
   function confirm() {
     if (!selected) return;
     setBuilderState({ season: selected });
-    router.push("/builder/6");
+    router.push("/builder/9");
   }
 
   return (
-    <StepShell step={5} photo="/images/steps/public-6.jpeg">
+    <StepShell step={8} photo="/images/steps/public-6.jpeg">
       <div className="max-w-xl w-full text-center">
         <p className="font-sans text-[10px] tracking-[0.3em] uppercase text-hv-sage mb-4">
-          Step 5
+          Step 8
         </p>
         <h1 className="font-serif font-light text-3xl sm:text-4xl text-hv-charcoal leading-snug mb-3">
-          What time of year speaks to you?
+          What time of year are you thinking?
         </h1>
         <p className="font-sans text-hv-sage text-sm sm:text-base leading-relaxed mb-10 max-w-md mx-auto">
-          Each season transforms the property into something entirely different.
+          Each season changes how the property looks and feels.
         </p>
 
         <div className="flex flex-col gap-3 mb-10">

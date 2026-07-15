@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { BuilderState } from "@/lib/builder-state";
+import {
+  VIBES, AISLE_FLOWERS, ARCHES, LINEN_COLORS, ACCENT_METALS,
+  SIGNATURE_DRINKS, CEREMONY_LOCATIONS, labelFor,
+} from "@/lib/calculator-options";
 
 const AIRTABLE_API_KEY = process.env.AIRTABLE_API_KEY!;
 const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID!;
@@ -16,28 +20,6 @@ const SEASON_LABELS: Record<string, string> = {
 const PHOTO_STYLE_LABELS: Record<string, string> = {
   airy: "Light and Airy",
   moody: "Dark and Moody",
-};
-
-const ROOM_FEELING_LABELS: Record<string, string> = {
-  romantic: "Swept away / Romantic",
-  elegant: "Elevated / Elegant",
-  rustic: "Right at home / Rustic",
-  dramatic: "Amazed / Dramatic",
-  garden: "Enchanted / Garden",
-};
-
-const FLORAL_STYLE_LABELS: Record<string, string> = {
-  roses: "Full and lush — roses, peonies, and romantic blooms",
-  greenery: "Fresh and organic — lush greenery, ferns, and natural textures",
-  white_blooms: "Clean and ethereal — white blooms, ivory, and soft neutrals",
-  hydrangea: "Garden and abundant — hydrangea, wildflowers, and loose arrangements",
-};
-
-const CEREMONY_LABELS: Record<string, string> = {
-  stone_wall: "The Stone Wall",
-  forest_view: "The Forest View",
-  indoor_fireplace: "Indoor by the Fireplace",
-  unsure: "Undecided",
 };
 
 const PRIORITY_LABELS: Record<string, string> = {
@@ -70,12 +52,14 @@ export async function POST(req: NextRequest) {
       "Email":                    state.email ?? "",
       "Wedding Date":             state.wedding_date ?? "",
       "Photo Style":              PHOTO_STYLE_LABELS[state.photography_style ?? ""] ?? "",
-      "Room Feeling":             ROOM_FEELING_LABELS[state.room_feeling ?? ""] ?? "",
-      "Floral Style":             FLORAL_STYLE_LABELS[state.floral_style ?? ""] ?? "",
-      "Colors Chosen":            (state.colors_chosen ?? []).join(", "),
+      "Vibe":                     labelFor(VIBES, state.vibe),
+      "Ceremony Location":        state.ceremony_location === "unsure" ? "Undecided" : labelFor(CEREMONY_LOCATIONS, state.ceremony_location),
+      "Aisle Flowers":            state.aisle_flowers === "unsure" ? "Undecided" : labelFor(AISLE_FLOWERS, state.aisle_flowers),
+      "Arch Selection":           state.arch_selection === "unsure" ? "Undecided" : labelFor(ARCHES, state.arch_selection),
+      "Linen Colors":             (state.linen_colors ?? []).map((v) => labelFor(LINEN_COLORS, v)).join(", "),
+      "Accent Metal":             labelFor(ACCENT_METALS, state.accent_metal),
       "Season":                   SEASON_LABELS[state.season ?? ""] ?? "",
-      "Ceremony Location":        CEREMONY_LABELS[state.ceremony_location ?? ""] ?? "",
-      "Signature Drink":          state.signature_drink ?? "",
+      "Signature Drinks":         state.alcohol_opt_out ? "No alcohol, mocktails" : (state.signature_drinks ?? []).map((v) => labelFor(SIGNATURE_DRINKS, v)).join(", "),
       "The One Thing":            PRIORITY_LABELS[state.priority ?? ""] ?? "",
       "Guest Count":              GUEST_COUNT_LABELS[state.guest_count ?? 0] ?? "",
       "All-Inclusive Interest":   state.all_inclusive_intent ?? false,

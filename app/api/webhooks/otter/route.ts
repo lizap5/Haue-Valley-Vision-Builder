@@ -238,20 +238,26 @@ async function generateFollowUpDraft(
   const f = tourRecord.fields;
   const coupleNames   = (f["Couple Names"] as string) || insights.couple_names_mentioned || "there";
   const firstName     = coupleNames.split(/[&,]/)[0].trim();
-  const visionStyle   = (f["Room Feeling"] as string) || "";
-  const floralStyle   = (f["Floral Style"] as string) || "";
+  const vibe          = (f["Vibe"] as string) || (f["Room Feeling"] as string) || "";
   const season        = (f["Season"] as string) || "";
   const ceremony      = (f["Ceremony Location"] as string) || "";
+  const aisle         = (f["Aisle Flowers"] as string) || "";
+  const arch          = (f["Arch Selection"] as string) || "";
+  const linens        = (f["Linen Colors"] as string) || "";
+  const metal         = (f["Accent Metal"] as string) || "";
   const priority      = (f["The One Thing"] as string) || "";
-  const drink         = (f["Signature Drink"] as string) || "";
+  const drinks        = (f["Signature Drinks"] as string) || (f["Signature Drink"] as string) || "";
 
   const visionContext = [
-    visionStyle  && `Their vision builder described wanting guests to feel: ${visionStyle}`,
-    floralStyle  && `Floral style: ${floralStyle}`,
-    season       && `Season: ${season}`,
-    ceremony     && `Ceremony space preference before the tour: ${ceremony}`,
-    priority     && `The one thing that mattered most to them: ${priority}`,
-    drink        && `Signature drink they mentioned: ${drink}`,
+    vibe     && `Their chosen vibe: ${vibe}`,
+    season   && `Season: ${season}`,
+    ceremony && `Ceremony space preference before the tour: ${ceremony}`,
+    aisle    && `Aisle flowers they picked: ${aisle}`,
+    arch     && `Arch or arbor they picked: ${arch}`,
+    linens   && `Linen and napkin colors: ${linens}`,
+    metal    && `Accent metal: ${metal}`,
+    priority && `The one thing that mattered most to them: ${priority}`,
+    drinks   && `Signature drinks they chose: ${drinks}`,
   ].filter(Boolean).join("\n");
 
   const prompt = `You are drafting a follow-up email for Haue Valley Weddings, a private estate wedding venue in Pacific, MO. This email will be reviewed by the Haue Valley team before being sent to the couple.
