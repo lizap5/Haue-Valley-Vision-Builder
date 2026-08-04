@@ -31,7 +31,34 @@ interface AirtableRecord {
     "Drinks Tags"?: string[];
     "Dance Floor Location"?: string[];
     "Notes"?: string;
+    [key: string]: unknown;
   };
+}
+
+// Field names people reasonably use for the same thing in Airtable. The first
+// non-empty match wins, so renaming a column does not silently zero a score.
+const FIELD_ALIASES: Record<string, string[]> = {
+  vibe:     ["Vibe Tags", "Vibes", "Vibe"],
+  space:    ["Space Tags", "Spaces", "Space"],
+  season:   ["Season Tags", "Seasons", "Season"],
+  color:    ["Color Tags", "Colors", "Color"],
+  metal:    ["Metal Tags", "Metals", "Accent Metal"],
+  mood:     ["Mood Tags", "Moods", "Mood"],
+  drinks:   ["Drinks Tags", "Drink Tags", "Drinks"],
+  aisle:    ["Aisle Tags", "Aisle Flowers", "Aisle"],
+  arch:     ["Arch Tags", "Arch Selection", "Arch"],
+  ceremony: ["Ceremony Location Tags", "Ceremony Location", "Ceremony Tags"],
+  setting:  ["Setting Tags", "Setting", "Indoor Outdoor"],
+};
+
+// Reads a tag list by logical name, tolerating the alias spellings above.
+function tags(record: AirtableRecord, key: keyof typeof FIELD_ALIASES): string[] {
+  for (const name of FIELD_ALIASES[key]) {
+    const value = record.fields[name];
+    if (Array.isArray(value) && value.length) return value as string[];
+    if (typeof value === "string" && value.trim()) return [value];
+  }
+  return [];
 }
 
 export interface ScoredPhoto {
@@ -114,40 +141,39 @@ const LINEN_COLOR_TAG_MAP: Record<string, string[]> = {
 };
 
 function scoreRecord(record: AirtableRecord, state: BuilderState): number {
-  const fields = record.fields;
   let score = 0;
 
   // Vibe match is the strongest signal: +5
   const vibeTag = VIBE_TAG_MAP[state.vibe ?? ""];
-  if (vibeTag && fields["Vibe Tags"]?.includes(vibeTag)) score += 5;
+  if (vibeTag && tags(record, "vibe").includes(vibeTag)) score += 5;
 
   // Their exact aisle flowers and arch: +4 each. These are specific enough
   // that a match is nearly always the right photo to show.
   const aisleTag = labelFor(AISLE_FLOWERS, state.aisle_flowers);
-  if (aisleTag && state.aisle_flowers !== "unsure" && fields["Aisle Tags"]?.includes(aisleTag)) score += 4;
+  if (aisleTag && state.aisle_flowers !== "unsure" && tags(record, "aisle").includes(aisleTag)) score += 4;
 
   const archTag = labelFor(ARCHES, state.arch_selection);
-  if (archTag && state.arch_selection !== "unsure" && fields["Arch Tags"]?.includes(archTag)) score += 4;
+  if (archTag && state.arch_selection !== "unsure" && tags(record, "arch").includes(archTag)) score += 4;
 
   // Their ceremony location: +4
   const ceremonyTag = CEREMONY_LOCATION_TAG_MAP[state.ceremony_location ?? ""];
-  if (ceremonyTag && fields["Ceremony Location Tags"]?.includes(ceremonyTag)) score += 4;
+  if (ceremonyTag && tags(record, "ceremony").includes(ceremonyTag)) score += 4;
 
   // Season match: +3
   const seasonTag = SEASON_MAP[state.season ?? ""];
-  if (seasonTag && fields["Season Tags"]?.includes(seasonTag)) score += 3;
+  if (seasonTag && tags(record, "season").includes(seasonTag)) score += 3;
 
   // Linen color tags: +2 per match
   const chosen = state.linen_colors ?? state.colors_chosen ?? [];
   const colorTags = [...new Set(chosen.flatMap((c) => LINEN_COLOR_TAG_MAP[c] ?? []))];
   for (const tag of colorTags) {
-    if (fields["Color Tags"]?.includes(tag)) score += 2;
+    if (tags(record, "color").includes(tag)) score += 2;
   }
 
   // Accent metal: +2
   if (state.accent_metal) {
     const metalTag = state.accent_metal === "gold" ? "Gold" : "Silver";
-    if (fields["Metal Tags"]?.includes(metalTag) || fields["Color Tags"]?.includes(metalTag)) score += 2;
+    if (tags(record, "metal").includes(metalTag) || tags(record, "color").includes(metalTag)) score += 2;
   }
 
   return score;
@@ -195,8 +221,8 @@ export async function POST(req: NextRequest) {
     for (const drink of drinkLabels) {
       const sign = withUrl.find(
         (r) =>
-          r.fields["Space Tags"]?.includes(BAR_SIGN_SPACE) &&
-          r.fields["Drinks Tags"]?.some((t) => t.toLowerCase() === drink.toLowerCase())
+          tags(r, "space").includes(BAR_SIGN_SPACE) &&
+          tags(r, "drinks").some((t) => t.toLowerCase() === drink.toLowerCase())
       );
       if (sign) {
         barSigns.push({ id: sign.id, url: getImageUrl(sign)!, name: drink, score: 0 });
@@ -205,8 +231,9 @@ export async function POST(req: NextRequest) {
 
     // --- Style pool: everything that's not a bar sign, honoring photo style ---
     const stylePool = withUrl.filter((r) => {
-      if (r.fields["Space Tags"]?.includes(BAR_SIGN_SPACE)) return false;
-      if (moodFilter && r.fields["Mood Tags"]?.length && !r.fields["Mood Tags"].includes(moodFilter)) return false;
+      if (tags(r, "space").includes(BAR_SIGN_SPACE)) return false;
+      const moodTags = tags(r, "mood");
+      if (moodFilter && moodTags.length && !moodTags.includes(moodFilter)) return false;
       return true;
     });
 
@@ -221,14 +248,14 @@ export async function POST(req: NextRequest) {
     const spacePhotos: ScoredPhoto[] = [];
     for (const space of REQUIRED_SPACES) {
       const inSpace = (s: { record: AirtableRecord }) =>
-        !used.has(s.record.id) && s.record.fields["Space Tags"]?.includes(space);
+        !used.has(s.record.id) && tags(s.record, "space").includes(space);
 
       // For the ceremony slot, show the location they actually picked
       // (indoor Fireplace or an outdoor space) before any ceremony photo.
       const hit =
         (space === "Ceremony" && chosenCeremonyTag
           ? scored.find(
-              (s) => inSpace(s) && s.record.fields["Ceremony Location Tags"]?.includes(chosenCeremonyTag)
+              (s) => inSpace(s) && tags(s.record, "ceremony").includes(chosenCeremonyTag)
             )
           : undefined) ?? scored.find(inSpace);
 
@@ -237,7 +264,7 @@ export async function POST(req: NextRequest) {
         spacePhotos.push({
           id: hit.record.id,
           url: getImageUrl(hit.record)!,
-          name: hit.record.fields["Image Name"] ?? hit.record.id,
+          name: (hit.record.fields["Image Name"] as string) ?? hit.record.id,
           score: hit.score,
           space,
         });
@@ -254,7 +281,7 @@ export async function POST(req: NextRequest) {
         stylePicks.push({
           id: s.record.id,
           url: getImageUrl(s.record)!,
-          name: s.record.fields["Image Name"] ?? s.record.id,
+          name: (s.record.fields["Image Name"] as string) ?? s.record.id,
           score: s.score,
         });
       }
@@ -265,7 +292,7 @@ export async function POST(req: NextRequest) {
         stylePicks.push({
           id: s.record.id,
           url: getImageUrl(s.record)!,
-          name: s.record.fields["Image Name"] ?? s.record.id,
+          name: (s.record.fields["Image Name"] as string) ?? s.record.id,
           score: s.score,
         });
       }

@@ -100,19 +100,38 @@ async function tagOne(url) {
   return JSON.parse(raw);
 }
 
+// Alias spellings, matching app/api/builder/photos/route.ts. The script writes
+// to whichever column name actually exists in the table, so it works whether
+// the field is called "Vibe Tags" or just "Vibes".
+const FIELD_ALIASES = {
+  vibe_tags:              ["Vibe Tags", "Vibes", "Vibe"],
+  space_tags:             ["Space Tags", "Spaces", "Space"],
+  ceremony_location_tags: ["Ceremony Location Tags", "Ceremony Location", "Ceremony Tags"],
+  setting_tags:           ["Setting Tags", "Setting", "Indoor Outdoor"],
+  aisle_tags:             ["Aisle Tags", "Aisle Flowers", "Aisle"],
+  arch_tags:              ["Arch Tags", "Arch Selection", "Arch"],
+  season_tags:            ["Season Tags", "Seasons", "Season"],
+  color_tags:             ["Color Tags", "Colors", "Color"],
+  metal_tags:             ["Metal Tags", "Metals", "Accent Metal"],
+  mood_tags:              ["Mood Tags", "Moods", "Mood"],
+};
+
+// Column names that actually exist in the table, discovered from the records
+// we fetched. Populated before tagging starts.
+const presentFields = new Set();
+
+function resolveFieldName(key) {
+  for (const name of FIELD_ALIASES[key]) {
+    if (presentFields.has(name)) return name;
+  }
+  return FIELD_ALIASES[key][0]; // fall back to the canonical name
+}
+
 async function updateRecord(id, tags) {
-  const fields = {
-    "Vibe Tags":              tags.vibe_tags ?? [],
-    "Space Tags":             tags.space_tags ?? [],
-    "Ceremony Location Tags": tags.ceremony_location_tags ?? [],
-    "Setting Tags":           tags.setting_tags ?? [],
-    "Aisle Tags":             tags.aisle_tags ?? [],
-    "Arch Tags":              tags.arch_tags ?? [],
-    "Season Tags":            tags.season_tags ?? [],
-    "Color Tags":             tags.color_tags ?? [],
-    "Metal Tags":             tags.metal_tags ?? [],
-    "Mood Tags":              tags.mood_tags ?? [],
-  };
+  const fields = {};
+  for (const key of Object.keys(FIELD_ALIASES)) {
+    fields[resolveFieldName(key)] = tags[key] ?? [];
+  }
   const res = await fetch(
     `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_ID}/${id}`,
     {
@@ -125,10 +144,17 @@ async function updateRecord(id, tags) {
 }
 
 const records = await fetchAllRecords();
+
+// Airtable only returns fields that have a value on at least one record, so
+// collect every column name we can see to resolve aliases.
+for (const r of records) {
+  for (const name of Object.keys(r.fields)) presentFields.add(name);
+}
+
 const targets = records.filter((r) => {
   if (!imageUrlOf(r)) return false;
   if (RETAG_ALL) return true;
-  return !(r.fields["Vibe Tags"]?.length); // only untagged (no Vibe Tags yet)
+  return !(r.fields[resolveFieldName("vibe_tags")]?.length); // only untagged so far
 });
 
 console.log(`${records.length} records in library, ${targets.length} to tag${DRY_RUN ? " (dry run)" : ""}.`);
