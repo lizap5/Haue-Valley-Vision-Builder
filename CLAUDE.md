@@ -54,8 +54,8 @@ Status: the preview backfill is complete (67 records, 66 filled, 0 failures).
 
 ### Scheduled runs
 
-`vercel.json` schedules both routes daily (08:00 and 08:30 UTC), so images
-added to Airtable get picked up without anyone opening a URL. Two caveats:
+`vercel.json` runs both routes **weekly, Monday 08:00 and 08:30 UTC**, so
+images added to Airtable get picked up without anyone opening a URL. Caveats:
 
 - **Vercel Cron only runs against Production**, so these do nothing until the
   branch is merged to `main`.
@@ -63,9 +63,13 @@ added to Airtable get picked up without anyone opening a URL. Two caveats:
   `Authorization: Bearer $CRON_SECRET`, so **`CRON_SECRET` must be set** in
   Vercel or the scheduled calls return 401. `ADMIN_TOKEN` still works for
   URLs pasted by hand.
+- Each run is bounded: 50 previews and **15 tagged images**. A weekly schedule
+  therefore clears about 15 new photos a week. After a bulk upload, run the
+  `tag-images` URL by hand a few times rather than waiting weeks for the
+  schedule to catch up.
 
-The Hobby plan allows 2 cron jobs, once per day each. That is exactly what is
-configured; adding a third or running more often needs Pro.
+The Hobby plan allows 2 cron jobs at most once per day each; weekly is well
+inside that.
 
 ### What is still manual
 
