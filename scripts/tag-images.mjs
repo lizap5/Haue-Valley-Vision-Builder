@@ -47,7 +47,7 @@ const PROMPT = `You are tagging a wedding venue photo for Haue Valley, a private
 Return a JSON object with exactly these keys (arrays may be empty when nothing clearly applies — do not guess):
 
 - vibe_tags: which of these aesthetics the photo clearly fits (0-3 of): "Garden Party" (soft pastel florals, daylight, playful garden feel), "Timeless Estate" (black & white, classic, formal), "European Summer" (white/yellow, citrus, crisp linen, Mediterranean feel), "Moody Romance" (dark tones, candlelight, deep florals), "Colorful Celebration" (bold saturated multicolor, joyful), "Something Blue" (blue tones throughout), "Elevated Western" (pampas, dried grasses, warm neutrals, refined rustic), "Editorial Romance" (clean white, candles, glass, minimal high-fashion feel)
-- space_tags: where at the venue this is, using ONLY these existing options (0-3 of): "Ceremony Area - Stone Wall", "Ceremony Area - Trees", "Ceremony - Indoor", "Ceremony Outdoor", "Fireplace Indoor", "Reception", "Head Table", "Dance Floor", "Bar Area", "Bar Sign" (a printed sign listing drink names), "Patio", "Detail Shot", "Florals", "Exterior", "Bridal Suite", "Grooms Room", "Forest", "Field", "Grassy Hillside", "Waterfall", "Bridge", "Gates", "Silo", "Ivy Wall", "Ruins", "Rocks", "Cabin", "With Cows", "Other"
+- space_tags: where at the venue this is, using ONLY these existing options (0-3 of): "Ceremony Area - Stone Wall", "Ceremony Area - Forest View", "Ceremony - Indoor", "Ceremony Outdoor", "Fireplace Indoor", "Reception", "Head Table", "Dance Floor", "Bar Area", "Bar Sign" (a printed sign listing drink names), "Upper Patio", "Detail Shot", "Florals", "Exterior", "Bridal Suite", "Grooms Room", "Forest", "Field", "Grassy Hillside", "Waterfall", "Bridge", "Gates", "Silo", "Ivy Wall", "Ruins", "Rocks", "Cabin", "With Cows", "Other"
 - setting_tags: exactly one of "Indoor" or "Outdoor", based on where the photo was taken
 - ceremony_location_tags: ONLY if this is a ceremony photo, which of Haue Valley's three ceremony sites it shows (0-1 of):
   "The Stone Wall" — outdoor. A long horizontal stone wall stands behind the couple with a rounded stone archway built into the center of it, framing them. Guests sit on backless wooden benches, aisle is poured concrete, trees rise behind the wall.
@@ -59,7 +59,7 @@ Return a JSON object with exactly these keys (arrays may be empty when nothing c
 - season_tags: seasons this could plausibly be (0-2): "Spring", "Summer", "Fall", "Winter"
 - color_tags: dominant decor colors (0-4 of): "White", "Ivory", "Beige", "Yellow", "Gold", "Blush", "Burgundy", "Navy", "Blue", "Purple", "Green", "Emerald", "Brown", "Terracotta", "Grey", "Black", "Silver"
 - metal_tags: visible accent metals (0-2): "Gold", "Silver"
-- mood_tags: photographic feel (exactly 1): "Airy" (bright, light) or "Moody" (dark, dramatic)
+- mood_tags: the photographic feel plus any aesthetic moods that apply (1-4). Always include exactly one of "Airy" (bright, light) or "Moody" (dark, dramatic). Then add any of these that fit: "Romantic", "Elegant", "Rustic", "Dramatic", "Candlelit"
 
 Use ONLY the exact strings listed. Return only valid JSON, no markdown.`;
 
@@ -78,10 +78,32 @@ async function fetchAllRecords() {
   return records;
 }
 
+// Drive's uc?export=view endpoint often returns an HTML interstitial rather
+// than image bytes, which the vision API cannot read. The thumbnail endpoint
+// serves a real image.
+function driveToDirectUrl(url) {
+  const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/) ?? url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (match) return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1600`;
+  return url;
+}
+
 function imageUrlOf(record) {
   const att = record.fields["Image Preview"];
   if (att?.length) return att[0].thumbnails?.large?.url ?? att[0].url;
+  const link = record.fields["Google Drive Link"];
+  if (link) return driveToDirectUrl(link);
   return null;
+}
+
+// Confirms a URL actually serves an image before we spend a vision call on it.
+async function servesAnImage(url) {
+  try {
+    const res = await fetch(url, { redirect: "follow" });
+    const type = res.headers.get("content-type") ?? "";
+    return res.ok && type.startsWith("image/");
+  } catch {
+    return false;
+  }
 }
 
 async function tagOne(url) {
@@ -158,6 +180,33 @@ const targets = records.filter((r) => {
 });
 
 console.log(`${records.length} records in library, ${targets.length} to tag${DRY_RUN ? " (dry run)" : ""}.`);
+
+// Preflight: if the images are not actually reachable there is no point
+// burning 67 vision calls to find out one failure at a time.
+if (targets.length) {
+  const sample = targets.slice(0, 3);
+  const results = await Promise.all(sample.map((r) => servesAnImage(imageUrlOf(r))));
+  const reachable = results.filter(Boolean).length;
+  if (reachable === 0) {
+    console.error(`
+None of the first ${sample.length} images could be loaded.
+
+Every record here is falling back to its Google Drive Link because the
+Image Preview attachment field is empty. Drive links only work if the file
+is shared as "Anyone with the link can view".
+
+Fix either by:
+  1. Setting Drive sharing to "Anyone with the link", then re-running, or
+  2. Uploading the actual files into the Image Preview attachment field,
+     which is more reliable and also what the mood board displays.
+
+Nothing was written.`);
+    process.exit(1);
+  }
+  if (reachable < sample.length) {
+    console.warn(`Warning: only ${reachable} of ${sample.length} sampled images loaded. Some records may fail.`);
+  }
+}
 
 let done = 0, failed = 0;
 for (const record of targets) {

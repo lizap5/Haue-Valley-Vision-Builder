@@ -77,7 +77,8 @@ const SPACE_SLOTS: { slot: string; accepts: string[] }[] = [
     slot: "Ceremony",
     accepts: [
       "Ceremony", "Ceremony Outdoor", "Ceremony - Indoor", "Ceremony Indoor",
-      "Ceremony Area - Stone Wall", "Ceremony Area - Trees", "Fireplace Indoor",
+      "Ceremony Area - Stone Wall", "Ceremony Area - Forest View",
+      "Ceremony Area - Trees", "Fireplace Indoor",
     ],
   },
   {
@@ -105,11 +106,12 @@ const CEREMONY_LOCATION_TAG_MAP: Record<string, string> = {
 // equivalent to a Ceremony Location Tag so photos tagged before that field
 // existed still match the couple's chosen site.
 const CEREMONY_LOCATION_FROM_SPACE: Record<string, string> = {
-  "Ceremony Area - Stone Wall": "The Stone Wall",
-  "Ceremony Area - Trees":      "The Forest View",
-  "Ceremony - Indoor":          "The Fireplace",
-  "Ceremony Indoor":            "The Fireplace",
-  "Fireplace Indoor":           "The Fireplace",
+  "Ceremony Area - Stone Wall":  "The Stone Wall",
+  "Ceremony Area - Forest View": "The Forest View",
+  "Ceremony Area - Trees":       "The Forest View", // older name for the same site
+  "Ceremony - Indoor":           "The Fireplace",
+  "Ceremony Indoor":             "The Fireplace",
+  "Fireplace Indoor":            "The Fireplace",
 };
 
 // Every ceremony site a photo can be read as showing, from either field.
@@ -121,9 +123,12 @@ function ceremonyLocationsOf(record: AirtableRecord): string[] {
   return [...new Set([...explicit, ...derived])];
 }
 
+// Drive's uc?export=view endpoint often returns an HTML interstitial rather
+// than image bytes. The thumbnail endpoint serves a real image, and sz sets
+// the long edge in pixels.
 function driveToDirectUrl(url: string): string {
-  const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-  if (match) return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+  const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/) ?? url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (match) return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1600`;
   return url;
 }
 
@@ -270,8 +275,14 @@ export async function POST(req: NextRequest) {
     // --- Style pool: everything that's not a bar sign, honoring photo style ---
     const stylePool = withUrl.filter((r) => {
       if (tags(r, "space").includes(BAR_SIGN_SPACE)) return false;
-      const moodTags = tags(r, "mood");
-      if (moodFilter && moodTags.length && !moodTags.includes(moodFilter)) return false;
+      // Mood Tags mixes photographic feel (Airy, Moody) with aesthetic mood
+      // (Rustic, Romantic, Elegant). Only drop a photo when it is explicitly
+      // tagged the opposite feel, so an untagged-for-feel photo stays eligible.
+      if (moodFilter) {
+        const moodTags = tags(r, "mood");
+        const opposite = moodFilter === "Airy" ? "Moody" : "Airy";
+        if (moodTags.includes(opposite) && !moodTags.includes(moodFilter)) return false;
+      }
       return true;
     });
 
