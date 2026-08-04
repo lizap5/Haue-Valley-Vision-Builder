@@ -29,17 +29,24 @@ export async function GET(req: NextRequest) {
   try {
     const records = await fetchAllRecords();
     const present = presentFieldsOf(records);
-    const vibeColumn = resolveFieldName("vibe_tags", present);
+
+    // Marker columns proving this tagger has seen a record. Setting Tags is the
+    // reliable one: the prompt requires exactly one of Indoor/Outdoor for every
+    // photo. Vibe Tags is legitimately empty for photos that match no vibe, so
+    // using it alone would re-tag those records on every scheduled run forever.
+    const markerColumns = [
+      resolveFieldName("setting_tags", present),
+      resolveFieldName("vibe_tags", present),
+    ];
+    const alreadyTagged = (r: { fields: Record<string, unknown> }) =>
+      markerColumns.some((col) => {
+        const v = r.fields[col];
+        return Array.isArray(v) ? v.length > 0 : Boolean(v);
+      });
 
     const withImages = records.filter((r) => imageUrlOf(r));
-    // A record counts as done once it has vibe tags, the column that only this
-    // tagger fills. With overwrite, everything is fair game again.
-    const pending = preserveExisting
-      ? withImages.filter((r) => {
-          const v = r.fields[vibeColumn];
-          return !(Array.isArray(v) && v.length);
-        })
-      : withImages;
+    // With overwrite, everything is fair game again.
+    const pending = preserveExisting ? withImages.filter((r) => !alreadyTagged(r)) : withImages;
 
     if (!pending.length) {
       return NextResponse.json({

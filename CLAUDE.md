@@ -54,15 +54,22 @@ Status: the preview backfill is complete (67 records, 66 filled, 0 failures).
 
 ### Scheduled runs
 
-`vercel.json` runs both routes **weekly, Monday 08:00 and 08:30 UTC**, so
-images added to Airtable get picked up without anyone opening a URL. Caveats:
+`vercel.json` runs both routes **weekly on Monday, backfill at 08:00 UTC and
+tagging at 10:00 UTC**, so images added to Airtable get picked up without
+anyone opening a URL. Caveats:
 
+- **On Hobby, Vercel may invoke a cron job anywhere within its scheduled
+  hour.** Two jobs in the same hour fire in arbitrary order. Tagging depends on
+  the attachment that backfill creates, so they must sit in **different hours**
+  or tagging can run first and skip that week's new photos. Do not narrow the
+  gap back down.
 - **Vercel Cron only runs against Production**, so these do nothing until the
   branch is merged to `main`.
 - Cron cannot put a secret in the path. It sends
   `Authorization: Bearer $CRON_SECRET`, so **`CRON_SECRET` must be set** in
   Vercel or the scheduled calls return 401. `ADMIN_TOKEN` still works for
-  URLs pasted by hand.
+  URLs pasted by hand. Add the variable, **then redeploy Production** — env
+  vars are snapshotted at build time.
 - Each run is bounded: 50 previews and **15 tagged images**. A weekly schedule
   therefore clears about 15 new photos a week. After a bulk upload, run the
   `tag-images` URL by hand a few times rather than waiting weeks for the
@@ -71,12 +78,44 @@ images added to Airtable get picked up without anyone opening a URL. Caveats:
 The Hobby plan allows 2 cron jobs at most once per day each; weekly is well
 inside that.
 
+### Post-merge check: did cron actually fire?
+
+This project has Vercel Authentication enabled. Standard Protection should
+leave the Production domain public, but **cron jobs do not follow redirects and
+are never retried**, so if protection does intercept the call the job no-ops
+silently, forever, with no error raised anywhere.
+
+After the first Monday following a merge, open **Settings → Cron Jobs → View
+Logs**. A 200 means it worked. **A 401 or any 3xx means protection is
+intercepting**, and the fix is a Protection Bypass secret in Vercel.
+
+### Re-runnability
+
+Both routes only ever fill blanks, so a duplicated or missed run is harmless:
+
+- `backfill-previews` selects records whose `Image Preview` is empty. Writing an
+  attachment replaces the whole array rather than appending, so even a
+  simultaneous double-run cannot produce duplicates.
+- `tag-images` in its default preserve mode skips any column that already holds
+  a value, and treats a record as done once **`Setting Tags` or `Vibe Tags`** is
+  populated. `Setting Tags` is the reliable marker because the prompt requires
+  exactly one of Indoor/Outdoor for every photo. `Vibe Tags` alone would not
+  work: it is legitimately empty for a photo matching no vibe, so such records
+  would be re-tagged every single week and quietly burn vision calls forever.
+
+A missed run simply means the work waits until the following Monday.
+
 ### What is still manual
 
 Nothing creates Airtable rows from Google Drive files. A new photo dropped in
 Drive is invisible to all of this until a row exists with a `Google Drive Link`.
 Wire that up with Zapier ("New File in Folder" → "Create Record"), or add rows
 by hand.
+
+Google Drive's **"New File in Folder" trigger is unreliable with subfolders and
+with files moved in from elsewhere**. Every image must be uploaded **directly
+into one flat folder** — no subfolders, no dragging in from another Drive
+location — or the Zap silently misses them.
 
 ## Airtable image library
 

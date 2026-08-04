@@ -6,7 +6,7 @@
     },
     {
       "path": "/api/admin/tag-images?limit=15",
-      "schedule": "30 8 * * 1"
+      "schedule": "0 10 * * 1"
     }
   ]
 }
