@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { BuilderState } from "@/lib/builder-state";
-import { SIGNATURE_DRINKS, labelFor } from "@/lib/calculator-options";
+import { SIGNATURE_DRINKS, AISLE_FLOWERS, ARCHES, labelFor } from "@/lib/calculator-options";
 
 const AIRTABLE_API_KEY = process.env.AIRTABLE_API_KEY!;
 const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID!;
@@ -22,6 +22,10 @@ interface AirtableRecord {
     "Season Tags"?: string[];
     "Vibe Tags"?: string[];
     "Metal Tags"?: string[];
+    "Aisle Tags"?: string[];
+    "Arch Tags"?: string[];
+    "Ceremony Location Tags"?: string[];
+    "Setting Tags"?: string[];
     "Floral Style Tags"?: string[];
     "Mood Tags"?: string[];
     "Drinks Tags"?: string[];
@@ -42,6 +46,15 @@ export interface ScoredPhoto {
 // These must match the Space Tags values in the Airtable image library.
 const REQUIRED_SPACES = ["Ceremony", "Reception", "Upper Patio"] as const;
 const BAR_SIGN_SPACE = "Bar Sign";
+
+// Ceremony is the one space with distinct locations, indoor and outdoor.
+// When the couple has chosen one, the Ceremony slot prefers a photo of that
+// exact location before falling back to any ceremony photo.
+const CEREMONY_LOCATION_TAG_MAP: Record<string, string> = {
+  stone_wall:  "The Stone Wall",
+  fireplace:   "The Fireplace",
+  forest_view: "The Forest View",
+};
 
 function driveToDirectUrl(url: string): string {
   const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
@@ -107,6 +120,18 @@ function scoreRecord(record: AirtableRecord, state: BuilderState): number {
   // Vibe match is the strongest signal: +5
   const vibeTag = VIBE_TAG_MAP[state.vibe ?? ""];
   if (vibeTag && fields["Vibe Tags"]?.includes(vibeTag)) score += 5;
+
+  // Their exact aisle flowers and arch: +4 each. These are specific enough
+  // that a match is nearly always the right photo to show.
+  const aisleTag = labelFor(AISLE_FLOWERS, state.aisle_flowers);
+  if (aisleTag && state.aisle_flowers !== "unsure" && fields["Aisle Tags"]?.includes(aisleTag)) score += 4;
+
+  const archTag = labelFor(ARCHES, state.arch_selection);
+  if (archTag && state.arch_selection !== "unsure" && fields["Arch Tags"]?.includes(archTag)) score += 4;
+
+  // Their ceremony location: +4
+  const ceremonyTag = CEREMONY_LOCATION_TAG_MAP[state.ceremony_location ?? ""];
+  if (ceremonyTag && fields["Ceremony Location Tags"]?.includes(ceremonyTag)) score += 4;
 
   // Season match: +3
   const seasonTag = SEASON_MAP[state.season ?? ""];
@@ -192,11 +217,21 @@ export async function POST(req: NextRequest) {
     const used = new Set<string>();
 
     // --- Guaranteed space slots: best-scoring photo for each required space ---
+    const chosenCeremonyTag = CEREMONY_LOCATION_TAG_MAP[state.ceremony_location ?? ""];
     const spacePhotos: ScoredPhoto[] = [];
     for (const space of REQUIRED_SPACES) {
-      const hit = scored.find(
-        (s) => !used.has(s.record.id) && s.record.fields["Space Tags"]?.includes(space)
-      );
+      const inSpace = (s: { record: AirtableRecord }) =>
+        !used.has(s.record.id) && s.record.fields["Space Tags"]?.includes(space);
+
+      // For the ceremony slot, show the location they actually picked
+      // (indoor Fireplace or an outdoor space) before any ceremony photo.
+      const hit =
+        (space === "Ceremony" && chosenCeremonyTag
+          ? scored.find(
+              (s) => inSpace(s) && s.record.fields["Ceremony Location Tags"]?.includes(chosenCeremonyTag)
+            )
+          : undefined) ?? scored.find(inSpace);
+
       if (hit) {
         used.add(hit.record.id);
         spacePhotos.push({

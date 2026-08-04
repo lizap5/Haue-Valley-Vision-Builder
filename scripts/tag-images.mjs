@@ -13,6 +13,13 @@
 //   Vibe Tags:   Garden Party, Timeless Estate, European Summer, Moody Romance,
 //                Colorful Celebration, Something Blue, Elevated Western, Editorial Romance
 //   Space Tags:  Ceremony, Reception, Upper Patio, Bar Sign, Detail, Other
+//   Ceremony Location Tags: The Stone Wall, The Fireplace, The Forest View
+//   Setting Tags: Indoor, Outdoor
+//   Aisle Tags:  The Feyre Aisle Flowers, The Cassian Aisle Flowers,
+//                The Gwen Aisle Flowers, The Velaris Aisle Flowers
+//   Arch Tags:   The Feyre Arch Flowers, The Elaine Arch Flowers,
+//                The Cassian Arch Flowers, The Gwen Arch Flowers,
+//                The Wooden Cross, The Wooden Arbor
 //   Season Tags: Spring, Summer, Fall, Winter
 //   Color Tags:  White, Ivory, Beige, Yellow, Gold, Blush, Burgundy, Navy, Blue,
 //                Purple, Green, Emerald, Brown, Terracotta, Grey, Black, Silver
@@ -40,7 +47,11 @@ const PROMPT = `You are tagging a wedding venue photo for Haue Valley, a private
 Return a JSON object with exactly these keys (arrays may be empty when nothing clearly applies — do not guess):
 
 - vibe_tags: which of these aesthetics the photo clearly fits (0-3 of): "Garden Party" (soft pastel florals, daylight, playful garden feel), "Timeless Estate" (black & white, classic, formal), "European Summer" (white/yellow, citrus, crisp linen, Mediterranean feel), "Moody Romance" (dark tones, candlelight, deep florals), "Colorful Celebration" (bold saturated multicolor, joyful), "Something Blue" (blue tones throughout), "Elevated Western" (pampas, dried grasses, warm neutrals, refined rustic), "Editorial Romance" (clean white, candles, glass, minimal high-fashion feel)
-- space_tags: where at the venue this is (0-2 of): "Ceremony" (outdoor stone wall, forest ceremony site, or indoor fireplace ceremony), "Reception" (dining tables, dance floor, indoor hall), "Upper Patio" (outdoor patio/terrace lounge area), "Bar Sign" (a printed sign listing drinks), "Detail" (close-up of decor, florals, place settings), "Other"
+- space_tags: where at the venue this is (0-2 of): "Ceremony" (any ceremony site, indoor or outdoor), "Reception" (dining tables, dance floor, indoor hall), "Upper Patio" (outdoor patio/terrace lounge area), "Bar Sign" (a printed sign listing drinks), "Detail" (close-up of decor, florals, place settings), "Other"
+- setting_tags: exactly one of "Indoor" or "Outdoor", based on where the photo was taken
+- ceremony_location_tags: ONLY if this is a ceremony photo, which of Haue Valley's three ceremony sites it shows (0-1 of): "The Stone Wall" (outdoor, a long stone wall with an arched opening in the center, wooden bench seating, open sky), "The Fireplace" (indoor, a large stone fireplace with candles along the mantle, draped white fabric, sheltered), "The Forest View" (outdoor, a wide tree canopy overhead, wooden arbor at the end of the aisle, deep greenery). Return an empty array if it is not a ceremony photo or the site is unclear.
+- aisle_tags: ONLY if flowers lining the ceremony aisle are clearly visible (0-1 of): "The Feyre Aisle Flowers" (white and blush clustered arrangements), "The Cassian Aisle Flowers" (white blooms with heavy greenery), "The Gwen Aisle Flowers" (white and green, looser and wilder), "The Velaris Aisle Flowers" (blue, lilac, and purple tones). Return an empty array unless you are confident.
+- arch_tags: ONLY if a ceremony arch, arbor, or cross is clearly visible (0-1 of): "The Feyre Arch Flowers" (lush white garden florals with a pop of blush), "The Elaine Arch Flowers" (clean white and black with greens), "The Cassian Arch Flowers" (mostly green with a pop of white), "The Gwen Arch Flowers" (wild, loose, free-form arrangement), "The Wooden Cross" (a bare or lightly decorated wooden cross), "The Wooden Arbor" (a bare or lightly decorated wooden arbor or pergola). Return an empty array unless you are confident.
 - season_tags: seasons this could plausibly be (0-2): "Spring", "Summer", "Fall", "Winter"
 - color_tags: dominant decor colors (0-4 of): "White", "Ivory", "Beige", "Yellow", "Gold", "Blush", "Burgundy", "Navy", "Blue", "Purple", "Green", "Emerald", "Brown", "Terracotta", "Grey", "Black", "Silver"
 - metal_tags: visible accent metals (0-2): "Gold", "Silver"
@@ -87,12 +98,16 @@ async function tagOne(url) {
 
 async function updateRecord(id, tags) {
   const fields = {
-    "Vibe Tags":   tags.vibe_tags ?? [],
-    "Space Tags":  tags.space_tags ?? [],
-    "Season Tags": tags.season_tags ?? [],
-    "Color Tags":  tags.color_tags ?? [],
-    "Metal Tags":  tags.metal_tags ?? [],
-    "Mood Tags":   tags.mood_tags ?? [],
+    "Vibe Tags":              tags.vibe_tags ?? [],
+    "Space Tags":             tags.space_tags ?? [],
+    "Ceremony Location Tags": tags.ceremony_location_tags ?? [],
+    "Setting Tags":           tags.setting_tags ?? [],
+    "Aisle Tags":             tags.aisle_tags ?? [],
+    "Arch Tags":              tags.arch_tags ?? [],
+    "Season Tags":            tags.season_tags ?? [],
+    "Color Tags":             tags.color_tags ?? [],
+    "Metal Tags":             tags.metal_tags ?? [],
+    "Mood Tags":              tags.mood_tags ?? [],
   };
   const res = await fetch(
     `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_ID}/${id}`,
@@ -123,7 +138,12 @@ for (const record of targets) {
       console.log(`[dry] ${name}:`, JSON.stringify(tags));
     } else {
       await updateRecord(record.id, tags);
-      console.log(`✓ ${name}: vibes=[${(tags.vibe_tags ?? []).join(", ")}] spaces=[${(tags.space_tags ?? []).join(", ")}]`);
+      const extra = [
+        (tags.ceremony_location_tags ?? [])[0],
+        (tags.aisle_tags ?? [])[0],
+        (tags.arch_tags ?? [])[0],
+      ].filter(Boolean).join(", ");
+      console.log(`✓ ${name}: vibes=[${(tags.vibe_tags ?? []).join(", ")}] spaces=[${(tags.space_tags ?? []).join(", ")}]${extra ? ` ${extra}` : ""}`);
     }
     done++;
   } catch (err) {
