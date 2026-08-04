@@ -56,13 +56,16 @@ export async function GET(req: NextRequest) {
     }
 
     if (dry) {
+      const runs = Math.ceil(missing.length / limit);
       return NextResponse.json({
         ok: true,
         dryRun: true,
         total: records.length,
         missingPreviews: missing.length,
+        perRequest: limit,
+        estimatedRuns: runs,
         sampleReachable: `${reachable} of ${sample.length}`,
-        message: `Would fill ${missing.length} Image Preview cells. Remove dry=1 to write.`,
+        message: `${missing.length} records need an Image Preview. Each call fills up to ${limit}, so expect about ${runs} run${runs === 1 ? "" : "s"}. Remove dry=1 to start; each response reports how many remain.`,
       });
     }
 

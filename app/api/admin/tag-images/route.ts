@@ -83,13 +83,17 @@ export async function GET(req: NextRequest) {
     }
 
     if (dry) {
+      const runs = Math.ceil(pending.length / limit);
       return NextResponse.json({
         ok: true,
         dryRun: true,
         mode: preserveExisting ? "preserve existing tags" : "overwrite everything",
         pending: pending.length,
+        perRequest: limit,
+        estimatedRuns: runs,
+        previewedHere: results.length,
         preview: results,
-        message: "Nothing was written. Remove dry=1 to apply.",
+        message: `${pending.length} images still need tags. This preview covers the first ${results.length}. Each call tags up to ${limit}, so expect about ${runs} run${runs === 1 ? "" : "s"}. Nothing was written; remove dry=1 to apply.`,
       });
     }
 
