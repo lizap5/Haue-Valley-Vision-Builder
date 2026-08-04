@@ -2,11 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   fetchAllRecords, presentFieldsOf, resolveFieldName, imageUrlOf,
   servesAnImage, tagImage, buildTagFields, patchRecords,
+  isAdminAuthorized,
 } from "@/lib/image-tagging";
 
 export const maxDuration = 60;
-
-const ADMIN_TOKEN = process.env.ADMIN_TOKEN ?? "";
 
 // Auto-tags the image library with Claude vision, a batch at a time so each
 // request finishes well inside the serverless time limit.
@@ -18,7 +17,7 @@ const ADMIN_TOKEN = process.env.ADMIN_TOKEN ?? "";
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
 
-  if (!ADMIN_TOKEN || url.searchParams.get("token") !== ADMIN_TOKEN) {
+  if (!isAdminAuthorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

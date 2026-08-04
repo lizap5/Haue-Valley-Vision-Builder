@@ -52,6 +52,28 @@ Both accept `dry=1` to report without writing.
 
 Status: the preview backfill is complete (67 records, 66 filled, 0 failures).
 
+### Scheduled runs
+
+`vercel.json` schedules both routes daily (08:00 and 08:30 UTC), so images
+added to Airtable get picked up without anyone opening a URL. Two caveats:
+
+- **Vercel Cron only runs against Production**, so these do nothing until the
+  branch is merged to `main`.
+- Cron cannot put a secret in the path. It sends
+  `Authorization: Bearer $CRON_SECRET`, so **`CRON_SECRET` must be set** in
+  Vercel or the scheduled calls return 401. `ADMIN_TOKEN` still works for
+  URLs pasted by hand.
+
+The Hobby plan allows 2 cron jobs, once per day each. That is exactly what is
+configured; adding a third or running more often needs Pro.
+
+### What is still manual
+
+Nothing creates Airtable rows from Google Drive files. A new photo dropped in
+Drive is invisible to all of this until a row exists with a `Google Drive Link`.
+Wire that up with Zapier ("New File in Folder" → "Create Record"), or add rows
+by hand.
+
 ## Airtable image library
 
 Table "Images" in the `Image Tag Index` base. The tag vocabulary the code reads

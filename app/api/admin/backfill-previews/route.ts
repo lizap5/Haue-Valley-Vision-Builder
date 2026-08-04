@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   fetchAllRecords, driveToDirectUrl, servesAnImage, patchRecords,
+  isAdminAuthorized,
 } from "@/lib/image-tagging";
 
 export const maxDuration = 60;
-
-const ADMIN_TOKEN = process.env.ADMIN_TOKEN ?? "";
 
 // Fills the "Image Preview" attachment field from "Google Drive Link".
 // Airtable downloads and hosts its own copy, which both the mood board and
@@ -16,7 +15,7 @@ const ADMIN_TOKEN = process.env.ADMIN_TOKEN ?? "";
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
 
-  if (!ADMIN_TOKEN || url.searchParams.get("token") !== ADMIN_TOKEN) {
+  if (!isAdminAuthorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

@@ -15,6 +15,26 @@ export interface AirtableRecord {
   fields: Record<string, unknown>;
 }
 
+// Admin routes are reachable two ways: a person pasting a URL with ?token=,
+// and Vercel Cron, which sends `Authorization: Bearer $CRON_SECRET` and cannot
+// carry a secret in the path.
+export function isAdminAuthorized(req: Request): boolean {
+  const adminToken = process.env.ADMIN_TOKEN ?? "";
+  const cronSecret = process.env.CRON_SECRET ?? "";
+
+  if (adminToken) {
+    const token = new URL(req.url).searchParams.get("token");
+    if (token === adminToken) return true;
+  }
+
+  if (cronSecret) {
+    const auth = req.headers.get("authorization") ?? "";
+    if (auth === `Bearer ${cronSecret}`) return true;
+  }
+
+  return false;
+}
+
 // Alias spellings, matching app/api/builder/photos/route.ts. Lets the table
 // call a column "Vibes" or "Vibe Tags" without silently breaking.
 export const FIELD_ALIASES: Record<string, string[]> = {
