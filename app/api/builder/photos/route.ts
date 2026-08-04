@@ -69,9 +69,27 @@ export interface ScoredPhoto {
   space?: string;
 }
 
-// The three spaces every mood board must include, in display order.
-// These must match the Space Tags values in the Airtable image library.
-const REQUIRED_SPACES = ["Ceremony", "Reception", "Upper Patio"] as const;
+// The three slots every mood board must fill, in display order. Each slot
+// accepts several Space Tags values, because the library's vocabulary is more
+// granular than the board is (a Head Table photo is still a reception photo).
+const SPACE_SLOTS: { slot: string; accepts: string[] }[] = [
+  {
+    slot: "Ceremony",
+    accepts: [
+      "Ceremony", "Ceremony Outdoor", "Ceremony - Indoor", "Ceremony Indoor",
+      "Ceremony Area - Stone Wall", "Ceremony Area - Trees", "Fireplace Indoor",
+    ],
+  },
+  {
+    slot: "Reception",
+    accepts: ["Reception", "Head Table", "Dance Floor"],
+  },
+  {
+    slot: "Upper Patio",
+    accepts: ["Upper Patio", "Patio"],
+  },
+];
+
 const BAR_SIGN_SPACE = "Bar Sign";
 
 // Ceremony is the one space with distinct locations, indoor and outdoor.
@@ -82,6 +100,26 @@ const CEREMONY_LOCATION_TAG_MAP: Record<string, string> = {
   fireplace:   "The Fireplace",
   forest_view: "The Forest View",
 };
+
+// Several existing Space Tags already name the ceremony site. Treat them as
+// equivalent to a Ceremony Location Tag so photos tagged before that field
+// existed still match the couple's chosen site.
+const CEREMONY_LOCATION_FROM_SPACE: Record<string, string> = {
+  "Ceremony Area - Stone Wall": "The Stone Wall",
+  "Ceremony Area - Trees":      "The Forest View",
+  "Ceremony - Indoor":          "The Fireplace",
+  "Ceremony Indoor":            "The Fireplace",
+  "Fireplace Indoor":           "The Fireplace",
+};
+
+// Every ceremony site a photo can be read as showing, from either field.
+function ceremonyLocationsOf(record: AirtableRecord): string[] {
+  const explicit = tags(record, "ceremony");
+  const derived = tags(record, "space")
+    .map((t) => CEREMONY_LOCATION_FROM_SPACE[t])
+    .filter(Boolean);
+  return [...new Set([...explicit, ...derived])];
+}
 
 function driveToDirectUrl(url: string): string {
   const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
@@ -157,7 +195,7 @@ function scoreRecord(record: AirtableRecord, state: BuilderState): number {
 
   // Their ceremony location: +4
   const ceremonyTag = CEREMONY_LOCATION_TAG_MAP[state.ceremony_location ?? ""];
-  if (ceremonyTag && tags(record, "ceremony").includes(ceremonyTag)) score += 4;
+  if (ceremonyTag && ceremonyLocationsOf(record).includes(ceremonyTag)) score += 4;
 
   // Season match: +3
   const seasonTag = SEASON_MAP[state.season ?? ""];
@@ -246,16 +284,16 @@ export async function POST(req: NextRequest) {
     // --- Guaranteed space slots: best-scoring photo for each required space ---
     const chosenCeremonyTag = CEREMONY_LOCATION_TAG_MAP[state.ceremony_location ?? ""];
     const spacePhotos: ScoredPhoto[] = [];
-    for (const space of REQUIRED_SPACES) {
+    for (const { slot, accepts } of SPACE_SLOTS) {
       const inSpace = (s: { record: AirtableRecord }) =>
-        !used.has(s.record.id) && tags(s.record, "space").includes(space);
+        !used.has(s.record.id) && tags(s.record, "space").some((t) => accepts.includes(t));
 
       // For the ceremony slot, show the location they actually picked
       // (indoor Fireplace or an outdoor space) before any ceremony photo.
       const hit =
-        (space === "Ceremony" && chosenCeremonyTag
+        (slot === "Ceremony" && chosenCeremonyTag
           ? scored.find(
-              (s) => inSpace(s) && tags(s.record, "ceremony").includes(chosenCeremonyTag)
+              (s) => inSpace(s) && ceremonyLocationsOf(s.record).includes(chosenCeremonyTag)
             )
           : undefined) ?? scored.find(inSpace);
 
@@ -266,7 +304,7 @@ export async function POST(req: NextRequest) {
           url: getImageUrl(hit.record)!,
           name: (hit.record.fields["Image Name"] as string) ?? hit.record.id,
           score: hit.score,
-          space,
+          space: slot,
         });
       }
     }
