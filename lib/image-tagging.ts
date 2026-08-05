@@ -48,13 +48,18 @@ export const FIELD_ALIASES: Record<string, string[]> = {
   color_tags:             ["Color Tags", "Colors", "Color"],
   metal_tags:             ["Metal Tags", "Metals", "Accent Metal"],
   mood_tags:              ["Mood Tags", "Moods", "Mood"],
+  // Read-only here. Drink names on bar signs are set by hand, never by the
+  // tagger, so buildTagFields skips this key: the model returns no value for it.
+  drinks_tags:            ["Drinks Tags", "Drink Tags", "Drinks"],
 };
 
 export function resolveFieldName(key: string, present: Set<string>): string {
-  for (const name of FIELD_ALIASES[key]) {
+  const aliases = FIELD_ALIASES[key];
+  if (!aliases) throw new Error(`Unknown tag field "${key}"`);
+  for (const name of aliases) {
     if (present.has(name)) return name;
   }
-  return FIELD_ALIASES[key][0];
+  return aliases[0];
 }
 
 export function presentFieldsOf(records: AirtableRecord[]): Set<string> {
