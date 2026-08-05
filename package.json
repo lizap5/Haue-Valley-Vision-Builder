@@ -4,8 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/check-tile-images.mjs",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "check:tiles": "node scripts/check-tile-images.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.104.1",

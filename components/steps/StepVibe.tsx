@@ -31,7 +31,16 @@ export default function StepVibe() {
         </p>
 
         <div className="mb-10">
-          <TileGrid options={VIBES} selected={selected} onSelect={setSelected} columns={4} />
+          {/* The calculator's vibe artwork has the name printed across the
+              photo, so the caption is suppressed to avoid showing it twice.
+              TileGrid still captions any tile whose image is missing. */}
+          <TileGrid
+            options={VIBES}
+            selected={selected}
+            onSelect={setSelected}
+            columns={4}
+            showLabels={false}
+          />
         </div>
 
         <button

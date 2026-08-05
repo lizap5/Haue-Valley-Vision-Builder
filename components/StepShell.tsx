@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
 interface StepShellProps {
@@ -11,6 +11,10 @@ interface StepShellProps {
 }
 
 export default function StepShell({ step, totalSteps = 11, photo, children }: StepShellProps) {
+  // A hero photo that fails to load collapses to nothing rather than showing
+  // a broken image, so the step still reads as finished.
+  const [photoMissing, setPhotoMissing] = useState(false);
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [step]);
@@ -41,12 +45,13 @@ export default function StepShell({ step, totalSteps = 11, photo, children }: St
       </div>
 
       {/* Step photo */}
-      {photo && (
+      {photo && !photoMissing && (
         <div className="w-full aspect-[4/3] sm:aspect-[16/7] overflow-hidden bg-hv-linen">
           <img
             src={photo}
             alt=""
             className="w-full h-full object-cover"
+            onError={() => setPhotoMissing(true)}
           />
         </div>
       )}
