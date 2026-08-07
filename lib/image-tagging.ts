@@ -159,7 +159,11 @@ export async function patchRecords(
     const res = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_ID}`, {
       method: "PATCH",
       headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ records: batch }),
+      // typecast lets Airtable create a select option that does not exist yet,
+      // rather than rejecting the batch. Safe because buildTagFields has
+      // already filtered values down to the known vocabulary, so only
+      // legitimate options can ever be created.
+      body: JSON.stringify({ records: batch, typecast: true }),
     });
     if (res.ok) {
       ok += batch.length;
@@ -252,6 +256,41 @@ export async function tagImage(url: string): Promise<Record<string, string[]>> {
 //
 // preserveExisting keeps any column that already has a value, so hand-curated
 // tags survive. Only empty columns get filled.
+// The only values each column may receive. The model occasionally strays
+// outside its instructions (returning "Brown" as an accent metal, for
+// instance), and Airtable rejects an unknown select option for the whole
+// batch, so one stray value would fail nine good records with it.
+const ALLOWED_VALUES: Record<string, ReadonlySet<string>> = {
+  vibe_tags: new Set([
+    "Garden Party", "Timeless Estate", "European Summer", "Moody Romance",
+    "Colorful Celebration", "Something Blue", "Elevated Western", "Editorial Romance",
+  ]),
+  space_tags: new Set([
+    "Ceremony Area - Stone Wall", "Ceremony Area - Forest View", "Ceremony - Indoor",
+    "Ceremony Outdoor", "Fireplace Indoor", "Reception", "Head Table", "Dance Floor",
+    "Bar Area", "Bar Sign", "Upper Patio", "Detail Shot", "Florals", "Exterior",
+    "Bridal Suite", "Grooms Room", "Forest", "Field", "Grassy Hillside", "Waterfall",
+    "Bridge", "Gates", "Silo", "Ivy Wall", "Ruins", "Rocks", "Cabin", "With Cows", "Other",
+  ]),
+  ceremony_location_tags: new Set(["The Stone Wall", "The Fireplace", "The Forest View"]),
+  setting_tags: new Set(["Indoor", "Outdoor"]),
+  aisle_tags: new Set([
+    "The Feyre Aisle Flowers", "The Cassian Aisle Flowers",
+    "The Gwen Aisle Flowers", "The Velaris Aisle Flowers",
+  ]),
+  arch_tags: new Set([
+    "The Feyre Arch Flowers", "The Elaine Arch Flowers", "The Cassian Arch Flowers",
+    "The Gwen Arch Flowers", "The Wooden Cross", "The Wooden Arbor",
+  ]),
+  season_tags: new Set(["Spring", "Summer", "Fall", "Winter"]),
+  color_tags: new Set([
+    "White", "Ivory", "Beige", "Yellow", "Gold", "Blush", "Burgundy", "Navy", "Blue",
+    "Purple", "Green", "Emerald", "Brown", "Terracotta", "Grey", "Black", "Silver",
+  ]),
+  metal_tags: new Set(["Gold", "Silver"]),
+  mood_tags: new Set(["Airy", "Moody", "Romantic", "Elegant", "Rustic", "Dramatic", "Candlelit"]),
+};
+
 export function buildTagFields(
   record: AirtableRecord,
   tags: Record<string, string[]>,
@@ -267,7 +306,10 @@ export function buildTagFields(
 
     if (preserveExisting && hasValue) continue;
 
-    const value = tags[key];
+    const allowed = ALLOWED_VALUES[key];
+    const value = Array.isArray(tags[key]) && allowed
+      ? tags[key].filter((v) => allowed.has(v))
+      : tags[key];
     if (!Array.isArray(value)) continue;
     // Skip writing an empty array over an already-empty cell; it is a no-op
     // that only risks an Airtable validation error.
