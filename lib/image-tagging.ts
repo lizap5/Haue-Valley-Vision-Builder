@@ -197,15 +197,47 @@ Return a JSON object with exactly these keys (arrays may be empty when nothing c
 
 Use ONLY the exact strings listed. Return only valid JSON, no markdown.`;
 
+// Media types the vision API accepts. Anything else is rejected outright.
+const SUPPORTED_MEDIA = ["image/jpeg", "image/png", "image/gif", "image/webp"] as const;
+type SupportedMedia = (typeof SUPPORTED_MEDIA)[number];
+
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+
+// Downloads an image and returns it inline.
+//
+// Handing the API a URL does not work here: it fetches the URL itself and
+// honors robots.txt, and Airtable's attachment host disallows crawlers, so
+// every request came back "This URL is disallowed by the website's robots.txt
+// file". Fetching server-side and sending bytes sidesteps that entirely.
+async function fetchImageAsBase64(url: string): Promise<{ media: SupportedMedia; data: string }> {
+  const res = await fetch(url, { redirect: "follow" });
+  if (!res.ok) throw new Error(`Image fetch failed: ${res.status}`);
+
+  const header = (res.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase();
+  // Airtable sometimes serves jpg as image/jpg, which the API does not accept.
+  const normalized = header === "image/jpg" ? "image/jpeg" : header;
+  const media = (SUPPORTED_MEDIA as readonly string[]).includes(normalized)
+    ? (normalized as SupportedMedia)
+    : "image/jpeg";
+
+  const buffer = Buffer.from(await res.arrayBuffer());
+  if (buffer.byteLength > MAX_IMAGE_BYTES) {
+    throw new Error(`Image is ${Math.round(buffer.byteLength / 1024 / 1024)}MB, over the 5MB limit`);
+  }
+
+  return { media, data: buffer.toString("base64") };
+}
+
 export async function tagImage(url: string): Promise<Record<string, string[]>> {
   const client = new Anthropic();
+  const { media, data } = await fetchImageAsBase64(url);
   const message = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
     max_tokens: 700,
     messages: [{
       role: "user",
       content: [
-        { type: "image", source: { type: "url", url } },
+        { type: "image", source: { type: "base64", media_type: media, data } },
         { type: "text", text: TAG_PROMPT },
       ],
     }],

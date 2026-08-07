@@ -24,7 +24,12 @@ export async function GET(req: NextRequest) {
   const dry = url.searchParams.get("dry") === "1";
   // Default is to protect hand-curated tags and only fill empty columns.
   const preserveExisting = url.searchParams.get("overwrite") !== "1";
-  const limit = Math.min(Number(url.searchParams.get("limit") ?? 8), 15);
+  const limit = Math.min(Number(url.searchParams.get("limit") ?? 6), 12);
+  // Each image now costs a download plus a vision call, so a large batch can
+  // outrun maxDuration. Stop early and save what is done rather than time out
+  // and lose the whole batch.
+  const startedAt = Date.now();
+  const TIME_BUDGET_MS = 45_000;
 
   try {
     const records = await fetchAllRecords();
@@ -76,7 +81,12 @@ export async function GET(req: NextRequest) {
     const results: { name: string; tags?: Record<string, string[]>; error?: string }[] = [];
     const updates: { id: string; fields: Record<string, unknown> }[] = [];
 
+    let stoppedEarly = false;
     for (const record of batch) {
+      if (Date.now() - startedAt > TIME_BUDGET_MS) {
+        stoppedEarly = true;
+        break;
+      }
       const name = (record.fields["Image Name"] as string) ?? record.id;
       try {
         const tags = await tagImage(imageUrlOf(record)!);
@@ -120,8 +130,9 @@ export async function GET(req: NextRequest) {
         ceremony: r.tags?.ceremony_location_tags ?? [],
         error: r.error,
       })),
+      stoppedEarly,
       message: remaining > 0
-        ? `Tagged ${written.ok}. About ${remaining} left, open this URL again to continue.`
+        ? `Tagged ${written.ok}.${stoppedEarly ? " Stopped early to stay inside the time limit." : ""} About ${remaining} left, open this URL again to continue.`
         : `Tagged ${written.ok}. All done.`,
     });
   } catch (err) {
