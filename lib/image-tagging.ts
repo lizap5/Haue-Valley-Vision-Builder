@@ -118,12 +118,18 @@ export function imageUrlOf(record: AirtableRecord): string | null {
   return null;
 }
 
-// Confirms a URL actually serves an image before spending a vision call on it.
+// Confirms a URL serves something that is plausibly an image.
+//
+// Deliberately lenient about content type: Airtable serves some attachments,
+// especially ones imported from Drive, as application/octet-stream even though
+// the bytes are a perfectly good JPEG. Only an HTML response is treated as a
+// failure, since that means a login wall or an error page rather than a file.
 export async function servesAnImage(url: string): Promise<boolean> {
   try {
     const res = await fetch(url, { redirect: "follow" });
-    const type = res.headers.get("content-type") ?? "";
-    return res.ok && type.startsWith("image/");
+    if (!res.ok) return false;
+    const type = (res.headers.get("content-type") ?? "").toLowerCase();
+    return !type.includes("text/html");
   } catch {
     return false;
   }

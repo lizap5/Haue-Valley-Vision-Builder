@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   fetchAllRecords, presentFieldsOf, resolveFieldName, imageUrlOf,
-  servesAnImage, tagImage, buildTagFields, patchRecords,
+  tagImage, buildTagFields, patchRecords,
   isAdminAuthorized, unauthorizedReason,
 } from "@/lib/image-tagging";
 
@@ -65,19 +65,6 @@ export async function GET(req: NextRequest) {
 
     const batch = pending.slice(0, limit);
 
-    // Preflight so a broken image pipeline fails once with an explanation
-    // rather than once per record.
-    const firstUrl = imageUrlOf(batch[0])!;
-    if (!(await servesAnImage(firstUrl))) {
-      return NextResponse.json({
-        ok: false,
-        problem: "The first image in this batch could not be loaded.",
-        likelyCause: "Records are falling back to Google Drive links that are not publicly shared, or the Image Preview field is empty.",
-        fix: "Run /api/admin/backfill-previews first, or set the Drive files to \"Anyone with the link\".",
-        checkedUrl: firstUrl,
-      }, { status: 422 });
-    }
-
     const results: {
       name: string;
       willWrite?: Record<string, unknown>;
@@ -109,6 +96,20 @@ export async function GET(req: NextRequest) {
       } catch (err) {
         results.push({ name, error: String(err).slice(0, 200) });
       }
+    }
+
+    // A single unreadable file must not stop the run, so failures are collected
+    // per record rather than blocking up front. Only a batch where nothing at
+    // all succeeded points at a broken pipeline worth reporting.
+    const succeeded = results.filter((r) => !r.error).length;
+    if (results.length && succeeded === 0) {
+      return NextResponse.json({
+        ok: false,
+        problem: `All ${results.length} images in this batch failed to process.`,
+        likelyCause: "The image files cannot be read, or the vision request is being rejected.",
+        fix: "Check the errors below. If they mention loading or fetching, run /api/admin/backfill-previews. Otherwise paste these errors for diagnosis.",
+        errors: results.map((r) => ({ name: r.name, error: r.error })),
+      }, { status: 422 });
     }
 
     if (dry) {
