@@ -232,7 +232,7 @@ async function fetchImageAsBase64(url: string): Promise<{ media: SupportedMedia;
   return { media, data: buffer.toString("base64") };
 }
 
-export async function tagImage(url: string): Promise<Record<string, string[]>> {
+export async function tagImage(url: string): Promise<Record<string, string[] | string>> {
   const client = new Anthropic();
   const { media, data } = await fetchImageAsBase64(url);
   const message = await client.messages.create({
@@ -293,7 +293,7 @@ const ALLOWED_VALUES: Record<string, ReadonlySet<string>> = {
 
 export function buildTagFields(
   record: AirtableRecord,
-  tags: Record<string, string[]>,
+  tags: Record<string, string[] | string>,
   present: Set<string>,
   preserveExisting: boolean
 ): { fields: Record<string, unknown>; dropped: Record<string, string[]>; skipped: string[] } {
@@ -312,7 +312,12 @@ export function buildTagFields(
       continue;
     }
 
-    const proposed = tags[key];
+    // The model returns single-value fields as a bare string rather than a
+    // one-element array. Setting Tags is always "Indoor" or "Outdoor", so it
+    // arrived as a string and was silently skipped, which also broke the
+    // already-tagged marker that depends on it.
+    const raw = tags[key];
+    const proposed = typeof raw === "string" ? [raw] : raw;
     if (!Array.isArray(proposed)) continue;
 
     const allowed = ALLOWED_VALUES[key];
