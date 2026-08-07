@@ -93,6 +93,34 @@ const SPACE_SLOTS: { slot: string; accepts: string[] }[] = [
 
 const BAR_SIGN_SPACE = "Bar Sign";
 
+// The library writes drink names loosely: "Rum & Coke" for our "Rum and Coke",
+// "Whiskey & Coke" for our "Whiskey Coke". Compare on a normalized form so an
+// ampersand or a stray "and" does not lose the match.
+function normalizeDrink(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .split(" ")
+    .filter((word) => word && word !== "and")
+    .join(" ");
+}
+
+// Category tags rather than drink names. Every drink photo carries these, so
+// they cannot identify which drink a photo shows.
+const GENERIC_DRINK_TAGS = new Set(["signature drink", "cocktails", "cocktail", "drinks"]);
+
+function specificDrinkTags(record: AirtableRecord): string[] {
+  return tags(record, "drinks").filter((t) => !GENERIC_DRINK_TAGS.has(normalizeDrink(t)));
+}
+
+// A drink photo is any record naming a specific drink, however it is filed.
+// The library tags these "Bar Area" + "Detail Shot" rather than "Bar Sign",
+// so requiring that one space tag would find nothing.
+function isDrinkPhoto(record: AirtableRecord): boolean {
+  return tags(record, "space").includes(BAR_SIGN_SPACE) || specificDrinkTags(record).length > 0;
+}
+
 // Ceremony is the one space with distinct locations, indoor and outdoor.
 // When the couple has chosen one, the Ceremony slot prefers a photo of that
 // exact location before falling back to any ceremony photo.
@@ -261,20 +289,24 @@ export async function POST(req: NextRequest) {
     // --- Bar signs: match the couple's chosen drinks against Drinks Tags ---
     const drinkLabels = (state.signature_drinks ?? []).map((v) => labelFor(SIGNATURE_DRINKS, v));
     const barSigns: ScoredPhoto[] = [];
+    const usedSigns = new Set<string>();
     for (const drink of drinkLabels) {
+      const wanted = normalizeDrink(drink);
       const sign = withUrl.find(
         (r) =>
-          tags(r, "space").includes(BAR_SIGN_SPACE) &&
-          tags(r, "drinks").some((t) => t.toLowerCase() === drink.toLowerCase())
+          !usedSigns.has(r.id) &&
+          specificDrinkTags(r).some((t) => normalizeDrink(t) === wanted)
       );
       if (sign) {
+        usedSigns.add(sign.id);
         barSigns.push({ id: sign.id, url: getImageUrl(sign)!, name: drink, score: 0 });
       }
     }
 
-    // --- Style pool: everything that's not a bar sign, honoring photo style ---
+    // --- Style pool: venue photos only, honoring photo style ---
     const stylePool = withUrl.filter((r) => {
-      if (tags(r, "space").includes(BAR_SIGN_SPACE)) return false;
+      // Keep cocktail close-ups out of the mood board's venue slots.
+      if (isDrinkPhoto(r)) return false;
       // Mood Tags mixes photographic feel (Airy, Moody) with aesthetic mood
       // (Rustic, Romantic, Elegant). Only drop a photo when it is explicitly
       // tagged the opposite feel, so an untagged-for-feel photo stays eligible.
