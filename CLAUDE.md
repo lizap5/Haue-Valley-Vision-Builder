@@ -46,11 +46,15 @@ many records remain; keep reloading until `remaining` is 0.
   reliable than a Drive URL. Up to 30 records per call (`limit`, max 50).
 - `tag-images` — auto-tags with Claude vision. **Preserves any column that
   already has a value**; only empty columns get filled. `overwrite=1` replaces
-  everything. Up to 8 per call (`limit`, max 15).
+  everything. Up to 6 per call (`limit`, max 12) — each image costs a download
+  plus a vision call, and the loop stops at 45s and saves what it finished
+  rather than risk a timeout discarding the batch.
+- `audit-library` — read-only inventory. Writes nothing.
 
 Both accept `dry=1` to report without writing.
 
-Status: the preview backfill is complete (67 records, 66 filled, 0 failures).
+Status: **complete**. 181 records, 180 with previews and tags, 0 awaiting.
+The one skip has no image file at all, so it is excluded rather than failing.
 
 ### Scheduled runs
 
@@ -70,8 +74,8 @@ anyone opening a URL. Caveats:
   Vercel or the scheduled calls return 401. `ADMIN_TOKEN` still works for
   URLs pasted by hand. Add the variable, **then redeploy Production** — env
   vars are snapshotted at build time.
-- Each run is bounded: 50 previews and **15 tagged images**. A weekly schedule
-  therefore clears about 15 new photos a week. After a bulk upload, run the
+- Each run is bounded: 50 previews and **12 tagged images**. A weekly schedule
+  therefore clears about 12 new photos a week. After a bulk upload, run the
   `tag-images` URL by hand a few times rather than waiting weeks for the
   schedule to catch up.
 
@@ -124,19 +128,35 @@ lives in `lib/image-tagging.ts` and `app/api/builder/photos/route.ts`; keep them
 in step.
 
 - Column names are read through an **alias list**, so `Vibes` and `Vibe Tags`
-  both work. Airtable rejects select options that do not already exist, so the
-  tagger only ever writes values the table defines.
+  both work.
+- Writes use `typecast`, so Airtable creates a select option that does not
+  exist yet instead of rejecting the batch. That is only safe because the
+  tagger filters model output against a fixed vocabulary first — the two
+  belong together. **Deleting an option in Airtable does not remove it: it
+  must also come out of the vocabulary, or the next run recreates it.**
 - `Space Tags` uses a granular in-house vocabulary (`Head Table`, `Dance Floor`,
   `Ceremony Area - Stone Wall`, …). Board slots map onto several values each
   rather than requiring a rename.
+- The mood board's three slots are **Ceremony, Reception, Details**. `Upper
+  Patio` was dropped: no photo ever carried it, so the slot always read
+  "coming soon". It is also removed from the tagger vocabulary, because
+  `typecast` would otherwise recreate the option in Airtable on the next run.
 - `Mood Tags` mixes photographic feel (`Airy`, `Moody`) with aesthetic mood
   (`Rustic`, `Romantic`, `Elegant`). The airy/moody filter therefore excludes a
   photo only when it explicitly carries the opposite feel.
 
 ## Still outstanding
 
-- The 27 tile images under `public/images/{vibes,aisle,arch,ceremony,metal,drinks}`
-  are missing. Steps render blank tiles without them, so **do not merge to
-  `main` until they are in place**.
+- The **31** tile images under `public/images/{vibes,aisle,arch,ceremony,metal,drinks}`
+  are missing. They no longer block a merge: a missing tile renders as a
+  labelled placeholder card, and `npm run check:tiles` lists what is absent.
+  They gate the *builder steps* only — the results page draws on Airtable and
+  is fully populated already.
 - Bar sign images need uploading with `Space Tags = Bar Sign` and a `Drinks Tags`
-  value matching the drink name exactly.
+  value matching the drink name. Matching normalizes ampersands, so `Rum & Coke`
+  finds the calculator's `Rum and Coke`. Five of the eight calculator drinks
+  already have photos; Gin and Tonic, Ranch Water, and Whiskey Highball do not.
+- Spot-check `Ceremony Area - Stone Wall` (14 records) against
+  `Ceremony Area - Forest View` (3). That imbalance may be real or may be the
+  tagger defaulting to Stone Wall when unsure, and a wrong site tag shows a
+  couple the wrong ceremony space.

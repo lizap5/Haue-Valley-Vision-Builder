@@ -86,8 +86,11 @@ const SPACE_SLOTS: { slot: string; accepts: string[] }[] = [
     accepts: ["Reception", "Head Table", "Dance Floor"],
   },
   {
-    slot: "Upper Patio",
-    accepts: ["Upper Patio", "Patio"],
+    // Was "Upper Patio", which no photo ever carried, so the slot always read
+    // "coming soon". Detail Shot is the best covered space tag and is a mood
+    // board staple in its own right.
+    slot: "Details",
+    accepts: ["Detail Shot", "Florals"],
   },
 ];
 

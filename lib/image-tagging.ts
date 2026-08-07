@@ -191,7 +191,7 @@ export const TAG_PROMPT = `You are tagging a wedding venue photo for Haue Valley
 Return a JSON object with exactly these keys (arrays may be empty when nothing clearly applies — do not guess):
 
 - vibe_tags: which of these aesthetics the photo clearly fits (0-3 of): "Garden Party" (soft pastel florals, daylight, playful garden feel), "Timeless Estate" (black & white, classic, formal), "European Summer" (white/yellow, citrus, crisp linen, Mediterranean feel), "Moody Romance" (dark tones, candlelight, deep florals), "Colorful Celebration" (bold saturated multicolor, joyful), "Something Blue" (blue tones throughout), "Elevated Western" (pampas, dried grasses, warm neutrals, refined rustic), "Editorial Romance" (clean white, candles, glass, minimal high-fashion feel)
-- space_tags: where at the venue this is, using ONLY these existing options (0-3 of): "Ceremony Area - Stone Wall", "Ceremony Area - Forest View", "Ceremony - Indoor", "Ceremony Outdoor", "Fireplace Indoor", "Reception", "Head Table", "Dance Floor", "Bar Area", "Bar Sign" (a printed sign listing drink names), "Upper Patio", "Detail Shot", "Florals", "Exterior", "Bridal Suite", "Grooms Room", "Forest", "Field", "Grassy Hillside", "Waterfall", "Bridge", "Gates", "Silo", "Ivy Wall", "Ruins", "Rocks", "Cabin", "With Cows", "Other"
+- space_tags: where at the venue this is, using ONLY these existing options (0-3 of): "Ceremony Area - Stone Wall", "Ceremony Area - Forest View", "Ceremony - Indoor", "Ceremony Outdoor", "Fireplace Indoor", "Reception", "Head Table", "Dance Floor", "Bar Area", "Bar Sign" (a printed sign listing drink names), "Detail Shot", "Florals", "Exterior", "Bridal Suite", "Grooms Room", "Forest", "Field", "Grassy Hillside", "Waterfall", "Bridge", "Gates", "Silo", "Ivy Wall", "Ruins", "Rocks", "Cabin", "With Cows", "Other"
 - setting_tags: exactly one of "Indoor" or "Outdoor", based on where the photo was taken
 - ceremony_location_tags: ONLY if this is a ceremony photo, which of Haue Valley's three ceremony sites it shows (0-1 of):
   "The Stone Wall" — outdoor. A long horizontal stone wall stands behind the couple with a rounded stone archway built into the center of it, framing them. Guests sit on backless wooden benches, aisle is poured concrete, trees rise behind the wall.
@@ -274,7 +274,7 @@ const ALLOWED_VALUES: Record<string, ReadonlySet<string>> = {
   space_tags: new Set([
     "Ceremony Area - Stone Wall", "Ceremony Area - Forest View", "Ceremony - Indoor",
     "Ceremony Outdoor", "Fireplace Indoor", "Reception", "Head Table", "Dance Floor",
-    "Bar Area", "Bar Sign", "Upper Patio", "Detail Shot", "Florals", "Exterior",
+    "Bar Area", "Bar Sign", "Detail Shot", "Florals", "Exterior",
     "Bridal Suite", "Grooms Room", "Forest", "Field", "Grassy Hillside", "Waterfall",
     "Bridge", "Gates", "Silo", "Ivy Wall", "Ruins", "Rocks", "Cabin", "With Cows", "Other",
   ]),

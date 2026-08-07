@@ -66,8 +66,8 @@ export async function GET(req: Request) {
            "Ceremony Area - Trees", "Fireplace Indoor"].includes(t))).length,
       Reception: records.filter((r) =>
         listOf(r, "space_tags").some((t) => ["Reception", "Head Table", "Dance Floor"].includes(t))).length,
-      "Upper Patio": records.filter((r) =>
-        listOf(r, "space_tags").some((t) => ["Upper Patio", "Patio"].includes(t))).length,
+      Details: records.filter((r) =>
+        listOf(r, "space_tags").some((t) => ["Detail Shot", "Florals"].includes(t))).length,
     };
 
     const untagged = records.filter((r) => imageUrlOf(r) && !isTagged(r));
