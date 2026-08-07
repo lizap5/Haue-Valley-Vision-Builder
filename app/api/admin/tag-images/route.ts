@@ -101,8 +101,13 @@ export async function GET(req: NextRequest) {
     // A single unreadable file must not stop the run, so failures are collected
     // per record rather than blocking up front. Only a batch where nothing at
     // all succeeded points at a broken pipeline worth reporting.
+    //
+    // Requires a few records before drawing that conclusion: the last one or
+    // two pending are often the known-bad stragglers everything else already
+    // skipped, and reporting those as a pipeline failure is alarming and wrong.
     const succeeded = results.filter((r) => !r.error).length;
-    if (results.length && succeeded === 0) {
+    const MIN_BATCH_TO_DIAGNOSE = 3;
+    if (results.length >= MIN_BATCH_TO_DIAGNOSE && succeeded === 0) {
       return NextResponse.json({
         ok: false,
         problem: `All ${results.length} images in this batch failed to process.`,
