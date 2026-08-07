@@ -35,6 +35,36 @@ export function isAdminAuthorized(req: Request): boolean {
   return false;
 }
 
+// Explains a rejection without revealing the secret. "Unauthorized" alone
+// cannot distinguish a wrong token from an env var that never reached this
+// build, which are very different fixes.
+export function unauthorizedReason(req: Request): Record<string, string> {
+  const adminToken = process.env.ADMIN_TOKEN ?? "";
+  const supplied = new URL(req.url).searchParams.get("token");
+
+  if (!adminToken) {
+    return {
+      error: "Unauthorized",
+      reason: "ADMIN_TOKEN is not set on this deployment.",
+      fix: "Add ADMIN_TOKEN in Vercel with the Preview environment checked, then redeploy this branch. Env vars are read at build time, so an existing deployment never picks up a new value.",
+    };
+  }
+  if (!supplied) {
+    return {
+      error: "Unauthorized",
+      reason: "No token was supplied in the URL.",
+      fix: "Append ?token=YOUR_ADMIN_TOKEN to the URL.",
+    };
+  }
+  return {
+    error: "Unauthorized",
+    reason: "The supplied token does not match ADMIN_TOKEN on this deployment.",
+    fix: "Either the value differs, or this deployment was built before the variable was last changed. Re-save the value in Vercel and redeploy this branch. Check for a trailing space or newline in the saved value.",
+    suppliedLength: String(supplied.length),
+    expectedLength: String(adminToken.length),
+  };
+}
+
 // Alias spellings, matching app/api/builder/photos/route.ts. Lets the table
 // call a column "Vibes" or "Vibe Tags" without silently breaking.
 export const FIELD_ALIASES: Record<string, string[]> = {

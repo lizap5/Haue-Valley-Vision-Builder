@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   fetchAllRecords, presentFieldsOf, resolveFieldName, imageUrlOf,
   servesAnImage, tagImage, buildTagFields, patchRecords,
-  isAdminAuthorized,
+  isAdminAuthorized, unauthorizedReason,
 } from "@/lib/image-tagging";
 
 export const maxDuration = 60;
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
   const url = new URL(req.url);
 
   if (!isAdminAuthorized(req)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json(unauthorizedReason(req), { status: 401 });
   }
 
   const dry = url.searchParams.get("dry") === "1";

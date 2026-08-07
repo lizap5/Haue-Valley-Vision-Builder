@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   fetchAllRecords, presentFieldsOf, resolveFieldName, imageUrlOf,
-  isAdminAuthorized, AirtableRecord,
+  isAdminAuthorized, unauthorizedReason, AirtableRecord,
 } from "@/lib/image-tagging";
 
 export const maxDuration = 60;
@@ -15,7 +15,7 @@ export const maxDuration = 60;
 //   /api/admin/audit-library?token=...
 export async function GET(req: Request) {
   if (!isAdminAuthorized(req)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json(unauthorizedReason(req), { status: 401 });
   }
 
   try {
