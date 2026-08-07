@@ -296,21 +296,31 @@ export function buildTagFields(
   tags: Record<string, string[]>,
   present: Set<string>,
   preserveExisting: boolean
-): Record<string, unknown> {
+): { fields: Record<string, unknown>; dropped: Record<string, string[]>; skipped: string[] } {
   const fields: Record<string, unknown> = {};
+  const dropped: Record<string, string[]> = {};
+  const skipped: string[] = [];
 
   for (const key of Object.keys(FIELD_ALIASES)) {
     const column = resolveFieldName(key, present);
     const current = record.fields[column];
     const hasValue = Array.isArray(current) ? current.length > 0 : Boolean(current);
 
-    if (preserveExisting && hasValue) continue;
+    // Preserve mode leaves any column that already holds a value untouched.
+    if (preserveExisting && hasValue) {
+      skipped.push(column);
+      continue;
+    }
+
+    const proposed = tags[key];
+    if (!Array.isArray(proposed)) continue;
 
     const allowed = ALLOWED_VALUES[key];
-    const value = Array.isArray(tags[key]) && allowed
-      ? tags[key].filter((v) => allowed.has(v))
-      : tags[key];
-    if (!Array.isArray(value)) continue;
+    const value = allowed ? proposed.filter((v) => allowed.has(v)) : proposed;
+
+    const rejected = allowed ? proposed.filter((v) => !allowed.has(v)) : [];
+    if (rejected.length) dropped[column] = rejected;
+
     // Skip writing an empty array over an already-empty cell; it is a no-op
     // that only risks an Airtable validation error.
     if (!value.length && !hasValue) continue;
@@ -318,5 +328,5 @@ export function buildTagFields(
     fields[column] = value;
   }
 
-  return fields;
+  return { fields, dropped, skipped };
 }

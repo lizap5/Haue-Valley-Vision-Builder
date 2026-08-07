@@ -78,7 +78,13 @@ export async function GET(req: NextRequest) {
       }, { status: 422 });
     }
 
-    const results: { name: string; tags?: Record<string, string[]>; error?: string }[] = [];
+    const results: {
+      name: string;
+      willWrite?: Record<string, unknown>;
+      dropped?: Record<string, string[]>;
+      keptExisting?: string[];
+      error?: string;
+    }[] = [];
     const updates: { id: string; fields: Record<string, unknown> }[] = [];
 
     let stoppedEarly = false;
@@ -90,8 +96,15 @@ export async function GET(req: NextRequest) {
       const name = (record.fields["Image Name"] as string) ?? record.id;
       try {
         const tags = await tagImage(imageUrlOf(record)!);
-        const fields = buildTagFields(record, tags, present, preserveExisting);
-        results.push({ name, tags });
+        const { fields, dropped, skipped } = buildTagFields(record, tags, present, preserveExisting);
+        // Report exactly what would be written, not the raw model output, so a
+        // dry run actually verifies the outcome.
+        results.push({
+          name,
+          willWrite: fields,
+          ...(Object.keys(dropped).length ? { dropped } : {}),
+          ...(skipped.length ? { keptExisting: skipped } : {}),
+        });
         if (Object.keys(fields).length) updates.push({ id: record.id, fields });
       } catch (err) {
         results.push({ name, error: String(err).slice(0, 200) });
@@ -109,7 +122,7 @@ export async function GET(req: NextRequest) {
         estimatedRuns: runs,
         previewedHere: results.length,
         preview: results,
-        message: `${pending.length} images still need tags. This preview covers the first ${results.length}. Each call tags up to ${limit}, so expect about ${runs} run${runs === 1 ? "" : "s"}. Nothing was written; remove dry=1 to apply.`,
+        message: `${pending.length} images still need tags. This preview covers the first ${results.length}. willWrite is exactly what would land in Airtable; dropped lists values rejected for not being valid options. Each call tags up to ${limit}, so expect about ${runs} run${runs === 1 ? "" : "s"}. Nothing was written; remove dry=1 to apply.`,
       });
     }
 
@@ -125,9 +138,8 @@ export async function GET(req: NextRequest) {
       errors: written.errors.slice(0, 3),
       results: results.map((r) => ({
         name: r.name,
-        vibes: r.tags?.vibe_tags ?? [],
-        spaces: r.tags?.space_tags ?? [],
-        ceremony: r.tags?.ceremony_location_tags ?? [],
+        wrote: r.willWrite ? Object.keys(r.willWrite) : [],
+        dropped: r.dropped,
         error: r.error,
       })),
       stoppedEarly,
