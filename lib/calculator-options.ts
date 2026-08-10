@@ -30,7 +30,7 @@ export const AISLE_FLOWERS: TileOption[] = [
 export const ARCHES: TileOption[] = [
   { value: "feyre_arch",   label: "The Feyre Arch Flowers",   descriptor: "Lush white garden with a pop of blush",  image: "/images/arch/feyre-arch.jpg" },
   { value: "elaine_arch",  label: "The Elaine Arch Flowers",  descriptor: "Clean white, black, and greens",         image: "/images/arch/elaine-arch.jpg" },
-  { value: "cassian_arch", label: "The Cassian Arch Flowers", descriptor: "Green with a pop of white",              image: "/images/arch/cassian-arch.png" },
+  { value: "cassian_arch", label: "The Cassian Arch Flowers", descriptor: "Green with a pop of white",              image: "/images/arch/cassian-arch.jpg" },
   { value: "gwen_arch",    label: "The Gwen Arch Flowers",    descriptor: "Wild, fun, and free",                    image: "/images/arch/gwen-arch.jpg" },
   { value: "wooden_cross", label: "The Wooden Cross",         descriptor: "Flowers optional, they are removable",   image: "/images/arch/wooden-cross.jpg" },
   { value: "wooden_arbor", label: "The Wooden Arbor",         descriptor: "Flowers optional, they are removable",   image: "/images/arch/wooden-arch.jpg" },
