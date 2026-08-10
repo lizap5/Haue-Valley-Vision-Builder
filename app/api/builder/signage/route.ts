@@ -18,14 +18,19 @@ async function generate(
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
       const response = await openai.images.generate({
-        model: "dall-e-3",
+        // dall-e-3 is not available to newer projects and returns "the model
+        // does not exist", which reads like a typo rather than an entitlement.
+        model: "gpt-image-1",
         prompt,
         n: 1,
-        size: "1024x1792",
-        quality: "standard",
+        // gpt-image-1 offers a different set of sizes; 1024x1792 is rejected.
+        size: "1024x1536",
+        quality: "medium",
       });
-      const url = response.data?.[0]?.url;
-      if (url) return url;
+      const image = response.data?.[0];
+      // This model returns base64 rather than a URL to fetch.
+      if (image?.b64_json) return `data:image/png;base64,${image.b64_json}`;
+      if (image?.url) return image.url;
     } catch (err) {
       console.error(`Signage image attempt ${attempt + 1} failed:`, err);
       if (attempt === 0) await new Promise((r) => setTimeout(r, 3000));
