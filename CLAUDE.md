@@ -147,16 +147,27 @@ in step.
 
 ## Still outstanding
 
-- The **31** tile images under `public/images/{vibes,aisle,arch,ceremony,metal,drinks}`
-  are missing. They no longer block a merge: a missing tile renders as a
-  labelled placeholder card, and `npm run check:tiles` lists what is absent.
-  They gate the *builder steps* only — the results page draws on Airtable and
-  is fully populated already.
 - Bar sign images need uploading with `Space Tags = Bar Sign` and a `Drinks Tags`
   value matching the drink name. Matching normalizes ampersands, so `Rum & Coke`
   finds the calculator's `Rum and Coke`. Five of the eight calculator drinks
   already have photos; Gin and Tonic, Ranch Water, and Whiskey Highball do not.
-- Spot-check `Ceremony Area - Stone Wall` (14 records) against
-  `Ceremony Area - Forest View` (3). That imbalance may be real or may be the
-  tagger defaulting to Stone Wall when unsure, and a wrong site tag shows a
-  couple the wrong ceremony space.
+  These are **not** the same as the eight drink tiles under `public/images/drinks`,
+  which are the selector thumbnails and are all present.
+
+## Tile images
+
+All **31** are present and verified in the preview. `npm run check:tiles` lists
+any that go missing and regenerates `lib/tile-manifest.generated.ts`, which is
+committed — run it after touching `public/images` or the manifest drifts.
+
+Filenames are **not** uniform, because the code was pointed at whatever was
+uploaded rather than making anyone rename files. `lib/calculator-options.ts`
+holds the real paths; do not assume a slug from a label. In particular the arch
+and aisle sets share three names (`cassian`, `feyre`, `gwen`) and are told apart
+only by an `-arch` / `-aisle` suffix, so a file dropped in the wrong folder
+shows couples the wrong arrangement without erroring.
+
+Linen colors are **not** images. `LINEN_COLORS` in `lib/calculator-options.ts`
+carries 17 hex values matching the venue's color card, rendered as CSS swatches.
+The hexes were sampled by eye from a screenshot of that card, not from supplier
+specs, so they are close but not colorimetric.
