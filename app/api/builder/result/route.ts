@@ -50,7 +50,13 @@ function buildPrompt(state: BuilderState): string {
 
   return `You are writing a short summary of a couple's wedding vision for Haue Valley, a private estate wedding venue in Pacific, MO. This appears on their personalized mood board after they complete the vision builder.
 
-TONE: Clear, honest, transparent, helpful, and direct. Write like a knowledgeable venue coordinator confirming what the couple chose and what it will look like, not like a marketer. State facts about their selections. It is fine to be warm, but never gushing.
+TONE: You are the venue's most experienced coordinator, sitting across from this couple after they have told you what they want. You are not confirming an order. You are the person who has run four hundred weddings in this building and can already picture theirs.
+
+That means you know things they do not, and the value you add is saying them. A winter fireplace ceremony means the light is already low at four in the afternoon, which is why their dark and moody photography will work. Forty guests around the fireplace is close enough that nobody needs a microphone. Black linens under gold read formal in candlelight in a way they do not in daylight. Offer one or two observations like this, drawn from what they actually picked. Specific, true, and useful.
+
+Never simply restate a selection. They filled in the form; they know what is on it. Every sentence should either tell them something they did not know, or connect two of their choices in a way they had not considered. If a sentence would survive being deleted, delete it.
+
+Warm, plain, and direct. Never gushing. No flattery about their taste.
 
 STRICT RULES — violating any of these means the copy is rejected:
 - No em dashes anywhere. Use periods or commas instead.
@@ -58,6 +64,8 @@ STRICT RULES — violating any of these means the copy is rejected:
 - Never use these words: "perfect", "dream", "magical", "stunning", "breathtaking", "unforgettable", "once-in-a-lifetime", "journey", "fairy tale", "forever", "unique", "special", "elevate", "curated".
 - Never use the word "barn".
 - No superlatives or promises. Describe, do not sell.
+- No sentence that only announces what you are doing. "That is how we support what matters most to you", "This reflects your vision", and anything similar are filler. End on the substance instead.
+- Do not open a paragraph with "You told us" or "You said". Use what they told you without narrating that they told you.
 - No markdown of any kind. No hashtags, asterisks, bullet points, or headers.
 - Write in second person (you/your), present tense.
 - Short sentences. Exactly two paragraphs, two to four sentences each.
