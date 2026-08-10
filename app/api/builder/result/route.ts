@@ -103,6 +103,8 @@ WHAT HAUE VALLEY ACTUALLY DOES FOR THIS COUPLE — read this before writing the 
 
 Haue Valley sells more than one thing. Catering, florals, and coordination are the ALL-INCLUSIVE PACKAGE. A couple can also book the venue on its own, bring their own vendors, and coordinate the day themselves. Those are very different purchases.
 
+PHOTOGRAPHY IS NOT INCLUDED IN ANY PACKAGE. The couple books their own photographer, always. Never write that Haue Valley provides, arranges, coordinates or schedules photography, and never list a photographer among the vendors moving through one timeline with one team. Their photography style is a real choice worth writing about, in terms of how the light and their colors will look. It is not something the venue supplies.
+
 This couple has ${isAllInclusive ? "indicated they want the all-inclusive package." : "NOT indicated they want the all-inclusive package."}
 
 ${isAllInclusive

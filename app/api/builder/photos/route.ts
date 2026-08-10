@@ -344,8 +344,13 @@ export async function POST(req: NextRequest) {
     // different ids and so survive an id-based check. Comparing the file name
     // catches the duplicate and keeps one board from showing it twice.
     const usedNames = new Set<string>();
-    const nameOf = (r: AirtableRecord) =>
-      String(r.fields["Image Name"] ?? r.id).trim().toLowerCase();
+    // A blank name must never be a shared key, or claiming one unnamed record
+    // would make every other unnamed record look like a duplicate of it and
+    // empty the board. Fall back to the id, which is unique.
+    const nameOf = (r: AirtableRecord) => {
+      const name = String(r.fields["Image Name"] ?? "").trim().toLowerCase();
+      return name || `id:${r.id}`;
+    };
     const isFresh = (r: AirtableRecord) => !used.has(r.id) && !usedNames.has(nameOf(r));
     const claim = (r: AirtableRecord) => {
       used.add(r.id);
