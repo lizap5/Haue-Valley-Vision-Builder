@@ -8,5 +8,11 @@ export const AVAILABLE_TILES: ReadonlySet<string> = new Set([
   "/images/vibes/colorful-celebration.jpg",
   "/images/vibes/something-blue.jpg",
   "/images/vibes/elevated-western.jpg",
-  "/images/vibes/editorial-romance.jpg"
+  "/images/vibes/editorial-romance.jpg",
+  "/images/arch/feyre-arch.jpg",
+  "/images/arch/elaine-arch.jpg",
+  "/images/arch/cassian-arch.png",
+  "/images/arch/gwen-arch.jpg",
+  "/images/arch/wooden-cross.jpg",
+  "/images/arch/wooden-arch.jpg"
 ]);
