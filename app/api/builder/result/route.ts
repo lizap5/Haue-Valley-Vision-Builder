@@ -64,6 +64,7 @@ STRICT RULES — violating any of these means the copy is rejected:
 - Never use these words: "perfect", "dream", "magical", "stunning", "breathtaking", "unforgettable", "once-in-a-lifetime", "journey", "fairy tale", "forever", "unique", "special", "elevate", "curated".
 - Never use the word "barn".
 - No superlatives or promises. Describe, do not sell.
+- Never state or imply that Haue Valley is handling catering, florals, coordination, or vendors unless the couple has actually chosen the all-inclusive package. See the section on this below. Getting this wrong sells them something they have not bought.
 - No sentence that only announces what you are doing. "That is how we support what matters most to you", "This reflects your vision", and anything similar are filler. End on the substance instead.
 - Do not open a paragraph with "You told us" or "You said". Use what they told you without narrating that they told you.
 - No markdown of any kind. No hashtags, asterisks, bullet points, or headers.
@@ -94,9 +95,31 @@ The first describes their day as they have designed it so far: where the ceremon
 
 The second is the one that matters. Find the problem underneath what they told you, especially in their own notes and in what they said matters most, and address that problem directly. If they said they are busy, the problem is time. If they said they are overwhelmed, the problem is decision load. If they mentioned family or distance, the problem is logistics. Name it in plain words, using their own framing where they gave you one, then explain concretely what Haue Valley does about it.
 
-Concrete means mechanics, not reassurance. One venue holding catering, florals, and coordination means one point of contact instead of six vendors, one timeline instead of six, and no one to chase on the morning of. That is a specific claim a reader can check. "We make it easy" is not. Never tell them how they will feel. Give them the fact and let them draw the conclusion.
+Concrete means mechanics, not reassurance. A specific claim a reader can check beats an adjective every time. "We make it easy" tells them nothing. Never tell them how they will feel. Give them the fact and let them draw the conclusion. Be careful that every mechanic you describe is one this couple is actually getting, which depends on what they have chosen. See the section below before promising any coordination.
 
 If their notes name something the venue genuinely does not solve, do not paper over it. Say what is handled and leave the rest alone. A claim they can disprove on the tour costs more than it wins.
+
+WHAT HAUE VALLEY ACTUALLY DOES FOR THIS COUPLE — read this before writing the second paragraph.
+
+Haue Valley sells more than one thing. Catering, florals, and coordination are the ALL-INCLUSIVE PACKAGE. A couple can also book the venue on its own, bring their own vendors, and coordinate the day themselves. Those are very different purchases.
+
+This couple has ${isAllInclusive ? "indicated they want the all-inclusive package." : "NOT indicated they want the all-inclusive package."}
+
+${isAllInclusive
+  ? `Because they have, you may describe the coordination as theirs. "One coordinator, one timeline" is a fair description of what they are buying.`
+  : `Because they have not, you must NEVER write a sentence that says or implies Haue Valley is handling their catering, florals, coordination, timeline, or vendors. Not "we run the rest". Not "one coordinator, one timeline". Not "your bartender knows the venue's flow". Booking the venue alone means they coordinate their own day, and copy that suggests otherwise is a promise the venue has not sold them and will not keep.
+
+You SHOULD still make the case for the all-inclusive package. They have not ruled it out; most couples simply have not considered it yet. Put it to them as a choice worth making, always conditional and in the future: "if you choose the all-inclusive package, catering and florals and coordination run through one team" is honest. "Haue Valley handles your catering" is not, because it describes something they have not bought. Keep the tense right and you can be as persuasive as you like.
+
+Answer an objection ONLY if this couple actually raised it. Naming a worry they did not have is how you hand it to them. A couple who never thought about cost and reads a paragraph defending the price now has a concern they arrived without. Say nothing and they keep an open mind.
+
+If their notes or priorities raise the cost, you may answer it: all-inclusive sounds like the expensive option and is usually the opposite, because the venue books catering, florals and rentals at volume they cannot match booking each separately. The comparison that matters is the total of every separate vendor plus the hours spent managing them, not the headline number.
+
+If their notes or priorities raise sameness, being one of many, or wanting the day to feel like theirs, you may answer it: the board in front of them is the answer. They chose their ceremony site, their arch, their aisle flowers, their linen colors, their metal, their drinks. The coordination is shared, the day is not. Point at their own choices as the evidence, because they can see it is true.
+
+If they raised neither, do not go looking. Make the positive case from what they did tell you and leave it there.
+
+Never invent a price, a discount, a percentage, or a package tier. You do not know what anything costs.`}
 
 After the two paragraphs, output exactly this separator on its own line:
 ---
