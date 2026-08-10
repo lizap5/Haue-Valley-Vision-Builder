@@ -338,6 +338,18 @@ export async function POST(req: NextRequest) {
       .map((r) => ({ record: r, score: scoreRecord(r, state) }))
       .sort((a, b) => b.score - a.score);
 
+    // Every venue photo, ignoring the airy/moody filter. The couple's chosen
+    // ceremony site must appear on their board, and the filter is why it
+    // sometimes could not: the Forest View has two photos in the whole
+    // library, so one Moody tag on both puts that site out of reach of an airy
+    // couple entirely. Showing them their own ceremony site in the wrong
+    // photographic feel beats showing them somewhere they are not getting
+    // married.
+    const anyVenuePhoto = withUrl
+      .filter((r) => !isDrinkPhoto(r))
+      .map((r) => ({ record: r, score: scoreRecord(r, state) }))
+      .sort((a, b) => b.score - a.score);
+
     const used = new Set<string>();
 
     // The same photograph can sit in the library under two records, which have
@@ -389,11 +401,15 @@ export async function POST(req: NextRequest) {
 
       const hit =
         slot === "Ceremony" && chosenCeremonyTag
-          ? // Their site first, then photos with no site recorded. Never a
-            // photo of one of the other sites, even if that leaves the slot
-            // empty, because the wrong room is a worse answer than none.
+          ? // Their chosen site, in order of how well the photo otherwise
+            // suits them, but it is shown either way. The last of these
+            // searches the whole library and ignores the airy/moody filter,
+            // so the only way this slot misses their site is if the library
+            // holds no photo of it at all. Only then does it fall back, and
+            // never to a photo of one of the other sites.
             scored.find((s) => preferred(s) && atChosenLocation(s)) ??
             scored.find((s) => inSpace(s) && atChosenLocation(s)) ??
+            anyVenuePhoto.find((s) => isFresh(s.record) && atChosenLocation(s)) ??
             scored.find((s) => preferred(s) && notElsewhere(s)) ??
             scored.find((s) => inSpace(s) && notElsewhere(s))
           : scored.find(preferred) ?? scored.find(inSpace);
