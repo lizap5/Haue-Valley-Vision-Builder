@@ -5,14 +5,26 @@ interface WelcomeSignProps {
   weddingDate: string;
   bgColor: string;
   textColor: string;
+  artUrl?: string;
 }
 
-export default function WelcomeSign({ coupleNames, weddingDate, bgColor, textColor }: WelcomeSignProps) {
+export default function WelcomeSign({ coupleNames, weddingDate, bgColor, textColor, artUrl }: WelcomeSignProps) {
   return (
     <div
-      className="relative w-full max-w-[320px] mx-auto aspect-[9/16] flex flex-col items-center justify-center px-10 text-center"
+      className="relative w-full max-w-[320px] mx-auto aspect-[9/16] flex flex-col items-center justify-center px-10 text-center overflow-hidden"
       style={{ backgroundColor: bgColor }}
     >
+      {/* Generated border sits behind the lettering. The couple's names are
+          always real text: the model draws the flowers, never the words. */}
+      {artUrl && (
+        <img
+          src={`/api/proxy/image?url=${encodeURIComponent(artUrl)}`}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+      )}
+      <div className="relative flex flex-col items-center">
       <p
         className="font-sans text-[8px] tracking-[0.35em] uppercase mb-5"
         style={{ color: textColor, opacity: 0.7 }}
@@ -42,6 +54,7 @@ export default function WelcomeSign({ coupleNames, weddingDate, bgColor, textCol
           </p>
         </>
       )}
+      </div>
     </div>
   );
 }
