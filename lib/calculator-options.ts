@@ -79,9 +79,9 @@ export const SIGNATURE_DRINKS: TileOption[] = [
 ];
 
 export const CEREMONY_LOCATIONS: TileOption[] = [
-  { value: "stone_wall",  label: "The Stone Wall",  descriptor: "Outdoor ceremony, open sky above",           image: "/images/ceremony/stone-wall.jpg" },
-  { value: "fireplace",   label: "The Fireplace",   descriptor: "Indoors, sheltered and warm, any weather",   image: "/images/ceremony/fireplace.jpg" },
-  { value: "forest_view", label: "The Forest View", descriptor: "Canopy of trees and dappled light",          image: "/images/ceremony/forest-view.jpg" },
+  { value: "stone_wall",  label: "The Stone Wall",  descriptor: "Outdoor ceremony, open sky above",           image: "/images/ceremony/the-stone-wall.jpg" },
+  { value: "fireplace",   label: "The Fireplace",   descriptor: "Indoors, sheltered and warm, any weather",   image: "/images/ceremony/the-indoor-fireplace.jpg" },
+  { value: "forest_view", label: "The Forest View", descriptor: "Canopy of trees and dappled light",          image: "/images/ceremony/the-forest-view.jpg" },
 ];
 
 // Lookup helpers
