@@ -8,26 +8,30 @@ function buildDrinkPrompt(drink: string): string {
   return `Professional product photography of a "${drink}" cocktail. Crystal cut-glass tumbler or appropriate glassware, sitting on a marble or stone surface. Soft natural light from the upper left casting gentle shadows. A single olive branch sprig on the left side. Warm cream ivory background. High-end editorial style, beautiful garnish appropriate to the drink. No text, no labels, no signs, no words anywhere in the image.`;
 }
 
-// One image. Resolves to null rather than throwing, so a single slow or
-// rejected generation costs its own picture and not the whole set.
+// One image, retried once. Concurrent image requests are rate limited, and a
+// rejection here used to be indistinguishable from a missing key: the sign
+// simply rendered blank. A single retry after a pause clears the throttle.
 async function generate(
   openai: import("openai").default,
-  prompt: string,
-  size: "1024x1792"
+  prompt: string
 ): Promise<string | null> {
-  try {
-    const response = await openai.images.generate({
-      model: "dall-e-3",
-      prompt,
-      n: 1,
-      size,
-      quality: "standard",
-    });
-    return response.data?.[0]?.url ?? null;
-  } catch (err) {
-    console.error("Signage image failed:", err);
-    return null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const response = await openai.images.generate({
+        model: "dall-e-3",
+        prompt,
+        n: 1,
+        size: "1024x1792",
+        quality: "standard",
+      });
+      const url = response.data?.[0]?.url;
+      if (url) return url;
+    } catch (err) {
+      console.error(`Signage image attempt ${attempt + 1} failed:`, err);
+      if (attempt === 0) await new Promise((r) => setTimeout(r, 3000));
+    }
   }
+  return null;
 }
 
 export async function POST(req: NextRequest) {
@@ -42,21 +46,24 @@ export async function POST(req: NextRequest) {
     const { default: OpenAI } = await import("openai");
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-    // Three images at once. In series they would exceed the function's time
-    // limit; the couple waits for the slowest rather than the sum.
-    const [drinkImageUrl, welcomeArtUrl, seatingArtUrl] = await Promise.all([
-      generate(openai, buildDrinkPrompt(drink), "1024x1792"),
-      generate(openai, signageArtPrompt(state, "welcome"), "1024x1792"),
-      generate(openai, signageArtPrompt(state, "seating"), "1024x1792"),
+    // Two images, not three: one border serves both signs. Three at once was
+    // enough concurrency to get the later two throttled, which is why the
+    // signs came back bare while the drink arrived fine.
+    const [drinkImageUrl, artUrl] = await Promise.all([
+      generate(openai, buildDrinkPrompt(drink)),
+      generate(openai, signageArtPrompt(state)),
     ]);
 
     return NextResponse.json({
       ok: true,
       drinkImageUrl,
-      welcomeArtUrl,
-      seatingArtUrl,
+      welcomeArtUrl: artUrl,
+      seatingArtUrl: artUrl,
       colors: signagePalette(state),
       drink,
+      // Surfaced so a blank sign can be told from a missing key without
+      // reading the function logs.
+      artGenerated: Boolean(artUrl),
     });
   } catch (err) {
     console.error("Signage generation error:", err);

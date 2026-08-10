@@ -8,6 +8,8 @@ const AIRTABLE_TABLE_ID = process.env.AIRTABLE_TABLE_ID!;
 
 interface AirtableAttachment {
   url: string;
+  filename?: string;
+  size?: number;
   thumbnails?: { large?: { url: string } };
 }
 
@@ -373,17 +375,32 @@ export async function POST(req: NextRequest) {
     // different ids and so survive an id-based check. Comparing the file name
     // catches the duplicate and keeps one board from showing it twice.
     const usedNames = new Set<string>();
-    // A blank name must never be a shared key, or claiming one unnamed record
-    // would make every other unnamed record look like a duplicate of it and
-    // empty the board. Fall back to the id, which is unique.
-    const nameOf = (r: AirtableRecord) => {
-      const name = String(r.fields["Image Name"] ?? "").trim().toLowerCase();
-      return name || `id:${r.id}`;
+    // Everything that identifies the underlying picture. Two records can hold
+    // the same photograph under different record names, so the name alone is
+    // not enough: the attachment's own filename and byte size, and the Drive
+    // link it came from, all catch a copy the name would miss. A blank value
+    // is never a key, or one unnamed record would shadow every other.
+    const keysOf = (r: AirtableRecord): string[] => {
+      const keys: string[] = [];
+      const push = (prefix: string, value?: string | number) => {
+        const v = String(value ?? "").trim().toLowerCase();
+        if (v) keys.push(`${prefix}:${v}`);
+      };
+      push("name", r.fields["Image Name"]);
+      push("drive", r.fields["Google Drive Link"]);
+      const attachment = r.fields["Image Preview"]?.[0];
+      push("file", attachment?.filename);
+      // Filenames repeat across unrelated uploads, so size qualifies it.
+      if (attachment?.filename && attachment?.size) {
+        push("filesize", `${attachment.filename}|${attachment.size}`);
+      }
+      return keys;
     };
-    const isFresh = (r: AirtableRecord) => !used.has(r.id) && !usedNames.has(nameOf(r));
+    const isFresh = (r: AirtableRecord) =>
+      !used.has(r.id) && !keysOf(r).some((k) => usedNames.has(k));
     const claim = (r: AirtableRecord) => {
       used.add(r.id);
-      usedNames.add(nameOf(r));
+      for (const k of keysOf(r)) usedNames.add(k);
     };
 
     // --- Guaranteed space slots: best-scoring photo for each required space ---
