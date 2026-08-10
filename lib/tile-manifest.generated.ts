@@ -14,5 +14,7 @@ export const AVAILABLE_TILES: ReadonlySet<string> = new Set([
   "/images/arch/cassian-arch.jpg",
   "/images/arch/gwen-arch.jpg",
   "/images/arch/wooden-cross.jpg",
-  "/images/arch/wooden-arch.jpg"
+  "/images/arch/wooden-arch.jpg",
+  "/images/metal/gold.jpg",
+  "/images/metal/silver.jpg"
 ]);
