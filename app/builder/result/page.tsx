@@ -114,7 +114,7 @@ function MoodBoard({
   const spaceBySlot = (space: string) => spacePhotos.find((p) => p.space === space);
   const ceremony = spaceBySlot("Ceremony");
   const reception = spaceBySlot("Reception");
-  const patio = spaceBySlot("Upper Patio");
+  const receptionSpace = spaceBySlot("Reception Space");
 
   const Cell = ({ photo, label, aspect = "aspect-square" }: { photo?: ScoredPhoto; label: string; aspect?: string }) => (
     <div>
@@ -141,7 +141,7 @@ function MoodBoard({
       <div className="grid grid-cols-3 gap-3 mb-3">
         <Cell photo={ceremony} label="Ceremony" />
         <Cell photo={reception} label="Reception" />
-        <Cell photo={patio} label="Upper Patio" />
+        <Cell photo={receptionSpace} label="The Space" />
       </div>
 
       {/* Row 2: style photos + swatch/metal cards */}

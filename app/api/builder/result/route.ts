@@ -80,7 +80,15 @@ THEIR SELECTIONS:
 
 If the couple provided a specific wedding date or month, use that exact timeframe. If not, use the season. Never contradict the date they typed. Only reference selections they actually made; skip anything marked "Not specified" or "Not yet decided" rather than guessing.
 
-Write two paragraphs. The first describes their day as they have designed it so far: where the ceremony happens, what the space looks like with their selections, who is there. The second connects what they said matters most to how Haue Valley supports it, plainly and specifically.
+Write two paragraphs.
+
+The first describes their day as they have designed it so far: where the ceremony happens, what the space looks like with their selections, who is there. Do not simply list their answers back. They already know what they picked, and a list reads as a receipt. Describe the room those choices add up to.
+
+The second is the one that matters. Find the problem underneath what they told you, especially in their own notes and in what they said matters most, and address that problem directly. If they said they are busy, the problem is time. If they said they are overwhelmed, the problem is decision load. If they mentioned family or distance, the problem is logistics. Name it in plain words, using their own framing where they gave you one, then explain concretely what Haue Valley does about it.
+
+Concrete means mechanics, not reassurance. One venue holding catering, florals, and coordination means one point of contact instead of six vendors, one timeline instead of six, and no one to chase on the morning of. That is a specific claim a reader can check. "We make it easy" is not. Never tell them how they will feel. Give them the fact and let them draw the conclusion.
+
+If their notes name something the venue genuinely does not solve, do not paper over it. Say what is handled and leave the rest alone. A claim they can disprove on the tour costs more than it wins.
 
 After the two paragraphs, output exactly this separator on its own line:
 ---

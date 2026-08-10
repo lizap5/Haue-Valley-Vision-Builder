@@ -72,7 +72,7 @@ export interface ScoredPhoto {
 // The three slots every mood board must fill, in display order. Each slot
 // accepts several Space Tags values, because the library's vocabulary is more
 // granular than the board is (a Head Table photo is still a reception photo).
-const SPACE_SLOTS: { slot: string; accepts: string[] }[] = [
+const SPACE_SLOTS: { slot: string; accepts: string[]; prefersNot?: string[] }[] = [
   {
     slot: "Ceremony",
     accepts: [
@@ -84,13 +84,18 @@ const SPACE_SLOTS: { slot: string; accepts: string[] }[] = [
   {
     slot: "Reception",
     accepts: ["Reception", "Head Table", "Dance Floor"],
+    // A centerpiece close-up is technically a reception photo but does not
+    // show the room. Prefer anything else, and fall back only if the library
+    // has nothing wider.
+    prefersNot: ["Detail Shot"],
   },
   {
     // Was "Upper Patio", which no photo ever carried, so the slot always read
-    // "coming soon". Detail Shot is the best covered space tag and is a mood
-    // board staple in its own right.
-    slot: "Details",
-    accepts: ["Detail Shot", "Florals"],
+    // "coming soon". A second reception photo shows the whole space, which the
+    // first slot's close-up cannot. `used` guarantees it is a different photo.
+    slot: "Reception Space",
+    accepts: ["Reception", "Dance Floor", "Head Table"],
+    prefersNot: ["Detail Shot"],
   },
 ];
 
@@ -330,9 +335,14 @@ export async function POST(req: NextRequest) {
     // --- Guaranteed space slots: best-scoring photo for each required space ---
     const chosenCeremonyTag = CEREMONY_LOCATION_TAG_MAP[state.ceremony_location ?? ""];
     const spacePhotos: ScoredPhoto[] = [];
-    for (const { slot, accepts } of SPACE_SLOTS) {
+    for (const { slot, accepts, prefersNot } of SPACE_SLOTS) {
       const inSpace = (s: { record: AirtableRecord }) =>
         !used.has(s.record.id) && tags(s.record, "space").some((t) => accepts.includes(t));
+
+      // Preferred candidates first, then anything in the space. A slot never
+      // goes empty just because every photo carries an avoided tag.
+      const preferred = (s: { record: AirtableRecord }) =>
+        inSpace(s) && !tags(s.record, "space").some((t) => prefersNot?.includes(t));
 
       // For the ceremony slot, show the location they actually picked
       // (indoor Fireplace or an outdoor space) before any ceremony photo.
@@ -341,7 +351,7 @@ export async function POST(req: NextRequest) {
           ? scored.find(
               (s) => inSpace(s) && ceremonyLocationsOf(s.record).includes(chosenCeremonyTag)
             )
-          : undefined) ?? scored.find(inSpace);
+          : undefined) ?? scored.find(preferred) ?? scored.find(inSpace);
 
       if (hit) {
         used.add(hit.record.id);
