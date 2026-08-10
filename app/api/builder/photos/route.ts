@@ -82,6 +82,11 @@ const SPACE_SLOTS: { slot: string; accepts: string[]; prefersNot?: string[] }[] 
       "Ceremony Area - Stone Wall", "Ceremony Area - Forest View",
       "Ceremony Area - Trees", "Fireplace Indoor",
     ],
+    // "Fireplace Indoor" is a place, not an event: the fireplace is both the
+    // indoor ceremony backdrop and where the head table goes. Around fifty
+    // photos carry it and many are receptions, so a photo also tagged for
+    // dining is one, and a couple would see a head table labelled Ceremony.
+    prefersNot: ["Head Table", "Reception", "Dance Floor"],
   },
   {
     // Was "Upper Patio", which no photo ever carried, so the slot always read
@@ -349,11 +354,15 @@ export async function POST(req: NextRequest) {
 
       // For the ceremony slot, show the location they actually picked
       // (indoor Fireplace or an outdoor space) before any ceremony photo.
+      // Their chosen ceremony location wins, but still prefer an actual
+      // ceremony over a head table shot of the same place.
+      const atChosenLocation = (s: { record: AirtableRecord }) =>
+        ceremonyLocationsOf(s.record).includes(chosenCeremonyTag!);
+
       const hit =
         (slot === "Ceremony" && chosenCeremonyTag
-          ? scored.find(
-              (s) => inSpace(s) && ceremonyLocationsOf(s.record).includes(chosenCeremonyTag)
-            )
+          ? scored.find((s) => preferred(s) && atChosenLocation(s)) ??
+            scored.find((s) => inSpace(s) && atChosenLocation(s))
           : undefined) ?? scored.find(preferred) ?? scored.find(inSpace);
 
       if (hit) {
