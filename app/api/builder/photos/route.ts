@@ -340,12 +340,24 @@ export async function POST(req: NextRequest) {
 
     const used = new Set<string>();
 
+    // The same photograph can sit in the library under two records, which have
+    // different ids and so survive an id-based check. Comparing the file name
+    // catches the duplicate and keeps one board from showing it twice.
+    const usedNames = new Set<string>();
+    const nameOf = (r: AirtableRecord) =>
+      String(r.fields["Image Name"] ?? r.id).trim().toLowerCase();
+    const isFresh = (r: AirtableRecord) => !used.has(r.id) && !usedNames.has(nameOf(r));
+    const claim = (r: AirtableRecord) => {
+      used.add(r.id);
+      usedNames.add(nameOf(r));
+    };
+
     // --- Guaranteed space slots: best-scoring photo for each required space ---
     const chosenCeremonyTag = CEREMONY_LOCATION_TAG_MAP[state.ceremony_location ?? ""];
     const spacePhotos: ScoredPhoto[] = [];
     for (const { slot, accepts, prefersNot } of SPACE_SLOTS) {
       const inSpace = (s: { record: AirtableRecord }) =>
-        !used.has(s.record.id) && tags(s.record, "space").some((t) => accepts.includes(t));
+        isFresh(s.record) && tags(s.record, "space").some((t) => accepts.includes(t));
 
       // Preferred candidates first, then anything in the space. A slot never
       // goes empty just because every photo carries an avoided tag.
@@ -366,7 +378,7 @@ export async function POST(req: NextRequest) {
           : undefined) ?? scored.find(preferred) ?? scored.find(inSpace);
 
       if (hit) {
-        used.add(hit.record.id);
+        claim(hit.record);
         spacePhotos.push({
           id: hit.record.id,
           url: getImageUrl(hit.record)!,
@@ -378,7 +390,7 @@ export async function POST(req: NextRequest) {
     }
 
     // --- Three more style-matched photos, spread across the score range ---
-    const remaining = scored.filter((s) => !used.has(s.record.id));
+    const remaining = scored.filter((s) => isFresh(s.record));
     const stylePicks: ScoredPhoto[] = [];
     const indices = [0, 3, 7];
     for (const i of indices) {
