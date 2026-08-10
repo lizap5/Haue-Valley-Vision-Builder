@@ -390,10 +390,12 @@ export async function POST(req: NextRequest) {
       push("drive", r.fields["Google Drive Link"]);
       const attachment = r.fields["Image Preview"]?.[0];
       push("file", attachment?.filename);
-      // Filenames repeat across unrelated uploads, so size qualifies it.
-      if (attachment?.filename && attachment?.size) {
-        push("filesize", `${attachment.filename}|${attachment.size}`);
-      }
+      // Last resort, and the only key two copies of one file always share:
+      // the byte count. Names, filenames and Drive links can all differ
+      // between records holding the identical picture. Two genuinely
+      // different photographs matching to the byte is possible but rare
+      // enough to be worth the trade against showing one twice.
+      push("bytes", attachment?.size);
       return keys;
     };
     const isFresh = (r: AirtableRecord) =>
