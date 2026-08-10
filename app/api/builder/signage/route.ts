@@ -1,17 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
 import { BuilderState } from "@/lib/builder-state";
+import { signagePalette, signageArtPrompt } from "@/lib/signage-style";
 
 export const maxDuration = 60;
 
-const FLORAL_COLORS: Record<string, { bg: string; text: string; accent: string }> = {
-  roses:        { bg: "#EDD5CC", text: "#5C2D3A", accent: "#C4857A" },
-  greenery:     { bg: "#D4E2D4", text: "#2A3E2A", accent: "#6B8F6B" },
-  white_blooms: { bg: "#F2EDE4", text: "#3D3228", accent: "#B8A89A" },
-  hydrangea:    { bg: "#D8E0EC", text: "#2A3550", accent: "#7B92B8" },
-};
-
 function buildDrinkPrompt(drink: string): string {
   return `Professional product photography of a "${drink}" cocktail. Crystal cut-glass tumbler or appropriate glassware, sitting on a marble or stone surface. Soft natural light from the upper left casting gentle shadows. A single olive branch sprig on the left side. Warm cream ivory background. High-end editorial style, beautiful garnish appropriate to the drink. No text, no labels, no signs, no words anywhere in the image.`;
+}
+
+// One image. Resolves to null rather than throwing, so a single slow or
+// rejected generation costs its own picture and not the whole set.
+async function generate(
+  openai: import("openai").default,
+  prompt: string,
+  size: "1024x1792"
+): Promise<string | null> {
+  try {
+    const response = await openai.images.generate({
+      model: "dall-e-3",
+      prompt,
+      n: 1,
+      size,
+      quality: "standard",
+    });
+    return response.data?.[0]?.url ?? null;
+  } catch (err) {
+    console.error("Signage image failed:", err);
+    return null;
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -26,26 +42,20 @@ export async function POST(req: NextRequest) {
     const { default: OpenAI } = await import("openai");
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-    const response = await openai.images.generate({
-      model: "dall-e-3",
-      prompt: buildDrinkPrompt(drink),
-      n: 1,
-      size: "1024x1792",
-      quality: "standard",
-    });
-
-    const imageUrl = response.data?.[0]?.url;
-    if (!imageUrl) {
-      return NextResponse.json({ ok: false, error: "No image returned" });
-    }
-
-    const floralStyle = state.floral_style ?? "white_blooms";
-    const colors = FLORAL_COLORS[floralStyle] ?? FLORAL_COLORS.white_blooms;
+    // Three images at once. In series they would exceed the function's time
+    // limit; the couple waits for the slowest rather than the sum.
+    const [drinkImageUrl, welcomeArtUrl, seatingArtUrl] = await Promise.all([
+      generate(openai, buildDrinkPrompt(drink), "1024x1792"),
+      generate(openai, signageArtPrompt(state, "welcome"), "1024x1792"),
+      generate(openai, signageArtPrompt(state, "seating"), "1024x1792"),
+    ]);
 
     return NextResponse.json({
       ok: true,
-      drinkImageUrl: imageUrl,
-      colors,
+      drinkImageUrl,
+      welcomeArtUrl,
+      seatingArtUrl,
+      colors: signagePalette(state),
       drink,
     });
   } catch (err) {

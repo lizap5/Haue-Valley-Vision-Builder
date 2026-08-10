@@ -12,6 +12,8 @@ import SeatingChart from "@/components/signage/SeatingChart";
 interface SignageData {
   ok: boolean;
   drinkImageUrl?: string;
+  welcomeArtUrl?: string;
+  seatingArtUrl?: string;
   colors?: { bg: string; text: string; accent: string };
   drink?: string;
 }
@@ -450,6 +452,7 @@ export default function ResultPage() {
                   weddingDate={localState.wedding_date ?? ""}
                   bgColor={signage?.colors?.bg ?? "#F2EDE4"}
                   textColor={signage?.colors?.text ?? "#3D3228"}
+                  artUrl={signage?.welcomeArtUrl}
                 />
                 <p className="font-sans text-[9px] tracking-[0.2em] uppercase text-hv-sage text-center mt-3 opacity-60">
                   Welcome sign
@@ -460,6 +463,9 @@ export default function ResultPage() {
               <div>
                 <SeatingChart
                   coupleNames={coupleNames}
+                  artUrl={signage?.seatingArtUrl}
+                  bgColor={signage?.colors?.bg}
+                  textColor={signage?.colors?.text}
                 />
                 <p className="font-sans text-[9px] tracking-[0.2em] uppercase text-hv-sage text-center mt-3 opacity-60">
                   Seating chart
