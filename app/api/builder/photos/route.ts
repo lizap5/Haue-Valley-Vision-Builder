@@ -69,10 +69,12 @@ export interface ScoredPhoto {
   space?: string;
 }
 
-// The three slots every mood board must fill, in display order. Each slot
-// accepts several Space Tags values, because the library's vocabulary is more
-// granular than the board is (a Head Table photo is still a reception photo).
-const SPACE_SLOTS: { slot: string; accepts: string[] }[] = [
+// The three slots every mood board must fill, in FILL order, which is not the
+// display order: the page looks each slot up by name. Order matters because
+// earlier slots claim their photo first. Each slot accepts several Space Tags
+// values, because the library's vocabulary is more granular than the board is
+// (a Head Table photo is still a reception photo).
+const SPACE_SLOTS: { slot: string; accepts: string[]; prefersNot?: string[] }[] = [
   {
     slot: "Ceremony",
     accepts: [
@@ -82,15 +84,21 @@ const SPACE_SLOTS: { slot: string; accepts: string[] }[] = [
     ],
   },
   {
-    slot: "Reception",
-    accepts: ["Reception", "Head Table", "Dance Floor"],
+    // Was "Upper Patio", which no photo ever carried, so the slot always read
+    // "coming soon". This is the wide shot of the room, and it is filled
+    // BEFORE the Reception slot below: a close-up of a centerpiece is welcome
+    // on the board, but only once the whole space has been shown. Filling in
+    // the other order lets the one wide photo get taken by the Reception slot,
+    // leaving two close-ups and no room. Display order lives in the page.
+    slot: "Reception Space",
+    accepts: ["Reception", "Dance Floor", "Head Table"],
+    prefersNot: ["Detail Shot"],
   },
   {
-    // Was "Upper Patio", which no photo ever carried, so the slot always read
-    // "coming soon". Detail Shot is the best covered space tag and is a mood
-    // board staple in its own right.
-    slot: "Details",
-    accepts: ["Detail Shot", "Florals"],
+    // Anything reception, close-ups included. `used` guarantees it differs
+    // from the wide shot above.
+    slot: "Reception",
+    accepts: ["Reception", "Head Table", "Dance Floor"],
   },
 ];
 
@@ -330,9 +338,14 @@ export async function POST(req: NextRequest) {
     // --- Guaranteed space slots: best-scoring photo for each required space ---
     const chosenCeremonyTag = CEREMONY_LOCATION_TAG_MAP[state.ceremony_location ?? ""];
     const spacePhotos: ScoredPhoto[] = [];
-    for (const { slot, accepts } of SPACE_SLOTS) {
+    for (const { slot, accepts, prefersNot } of SPACE_SLOTS) {
       const inSpace = (s: { record: AirtableRecord }) =>
         !used.has(s.record.id) && tags(s.record, "space").some((t) => accepts.includes(t));
+
+      // Preferred candidates first, then anything in the space. A slot never
+      // goes empty just because every photo carries an avoided tag.
+      const preferred = (s: { record: AirtableRecord }) =>
+        inSpace(s) && !tags(s.record, "space").some((t) => prefersNot?.includes(t));
 
       // For the ceremony slot, show the location they actually picked
       // (indoor Fireplace or an outdoor space) before any ceremony photo.
@@ -341,7 +354,7 @@ export async function POST(req: NextRequest) {
           ? scored.find(
               (s) => inSpace(s) && ceremonyLocationsOf(s.record).includes(chosenCeremonyTag)
             )
-          : undefined) ?? scored.find(inSpace);
+          : undefined) ?? scored.find(preferred) ?? scored.find(inSpace);
 
       if (hit) {
         used.add(hit.record.id);

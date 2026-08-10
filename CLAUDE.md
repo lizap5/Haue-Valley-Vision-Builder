@@ -53,8 +53,18 @@ many records remain; keep reloading until `remaining` is 0.
 
 Both accept `dry=1` to report without writing.
 
-Status: **complete**. 181 records, 180 with previews and tags, 0 awaiting.
+Status: **complete**. 170 records, 169 with previews and tags, 0 awaiting.
 The one skip has no image file at all, so it is excluded rather than failing.
+Mood board slot coverage: Ceremony 83, Reception 74, Details 79.
+
+The count fell from 181 because linen swatch, accent metal, and screenshot
+images had been added to the library. **Those do not belong in Airtable.** The
+mood board draws its swatch card and metal chip from `LINEN_COLORS` hex and a
+CSS gradient in `app/builder/result/page.tsx`, not from any photo, so such
+records are used by nothing while remaining eligible for the collage's photo
+slots — a couple could be shown a flat square of fabric as their reception
+photo. They were deleted from Airtable and moved out of the watched Drive
+folder, since the Zap would otherwise recreate them.
 
 ### Scheduled runs
 
@@ -144,15 +154,25 @@ in step.
 - `Mood Tags` mixes photographic feel (`Airy`, `Moody`) with aesthetic mood
   (`Rustic`, `Romantic`, `Elegant`). The airy/moody filter therefore excludes a
   photo only when it explicitly carries the opposite feel.
+- **The tagger never writes `Drinks Tags`.** It is read through the alias list
+  but is not in the vocabulary the model produces, so drink names must be typed
+  by hand or a bar sign will never match a couple's selection. All eight
+  calculator drinks are now covered. Matching normalizes case, punctuation and
+  ampersands, so `Whiskey & Coke` and `Gin & Tonic` both resolve correctly; the
+  generic `Signature Drink` and `Cocktails` are ignored because every drink
+  photo carries them.
+- `Color Tags` and `LINEN_COLORS` deliberately do **not** match. Color tags are
+  broad colors visible in a photo (`Purple`, `Blue`, `Gold`); linen colors are
+  orderable fabrics (`Eggplant`, `Slate Blue`, `Maize Yellow`). A photograph
+  does not contain "Maize Yellow", and asking vision to tell Lilac from Eggplant
+  across varying light would produce confident nonsense. `LINEN_COLOR_TAG_MAP`
+  in `app/api/builder/photos/route.ts` bridges the two, most linens mapping to
+  two tags so a near miss still scores. Renaming the Airtable options to the
+  linen names silently breaks that scoring.
 
 ## Still outstanding
 
-- Bar sign images need uploading with `Space Tags = Bar Sign` and a `Drinks Tags`
-  value matching the drink name. Matching normalizes ampersands, so `Rum & Coke`
-  finds the calculator's `Rum and Coke`. Five of the eight calculator drinks
-  already have photos; Gin and Tonic, Ranch Water, and Whiskey Highball do not.
-  These are **not** the same as the eight drink tiles under `public/images/drinks`,
-  which are the selector thumbnails and are all present.
+- Nothing creates Airtable rows from Google Drive files. See below.
 
 ## Tile images
 
