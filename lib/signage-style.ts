@@ -48,7 +48,7 @@ export function signagePalette(state: BuilderState): SignagePalette {
 // Image models render text as gibberish, and a misspelled name on a couple's
 // welcome sign is worse than no sign at all. So the model is asked for the
 // border and nothing else, and the lettering is drawn over it in real fonts.
-export function signageArtPrompt(state: BuilderState, shape: "welcome" | "seating"): string {
+export function signageArtPrompt(state: BuilderState): string {
   const colorNames = (state.linen_colors ?? [])
     .map((v) => labelFor(LINEN_COLORS, v))
     .filter(Boolean);
@@ -56,10 +56,11 @@ export function signageArtPrompt(state: BuilderState, shape: "welcome" | "seatin
   const vibe = labelFor(VIBES, state.vibe) || "elegant and understated";
   const metal = state.accent_metal === "silver" ? "silver" : "gold";
 
+  // One border serves both signs. The seating chart is the tighter constraint,
+  // carrying six tables of names, so the centre must stay clear for it; the
+  // welcome sign is comfortable within the same shape.
   const density =
-    shape === "welcome"
-      ? "Florals gather in the upper left and lower right corners and thin to nothing across the middle."
-      : "A narrow floral border runs around the outer edge only. The entire centre is empty.";
+    "A narrow floral border around the outer edge only, heavier in the upper left and lower right corners. The entire centre of the image is empty background.";
 
   return [
     `An elegant decorative floral border for a wedding sign, in the style of ${vibe}.`,
