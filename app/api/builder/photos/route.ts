@@ -232,7 +232,13 @@ function scoreRecord(record: AirtableRecord, state: BuilderState): number {
 
   // Vibe match is the strongest signal: +5
   const vibeTag = VIBE_TAG_MAP[state.vibe ?? ""];
-  if (vibeTag && tags(record, "vibe").includes(vibeTag)) score += 5;
+  const recordVibes = tags(record, "vibe");
+  if (vibeTag && recordVibes.includes(vibeTag)) score += 5;
+
+  // A photo carrying only other vibes is off brief, and a board showing two
+  // aesthetics at once reads as though nobody looked at it. Untagged photos
+  // are unaffected: no vibe recorded is not the same as the wrong one.
+  if (vibeTag && recordVibes.length && !recordVibes.includes(vibeTag)) score -= 5;
 
   // Their exact aisle flowers and arch: +4 each. These are specific enough
   // that a match is nearly always the right photo to show.
