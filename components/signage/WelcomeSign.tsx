@@ -18,7 +18,7 @@ export default function WelcomeSign({ coupleNames, weddingDate, bgColor, textCol
           always real text: the model draws the flowers, never the words. */}
       {artUrl && (
         <img
-          src={`/api/proxy/image?url=${encodeURIComponent(artUrl)}`}
+          src={artUrl.startsWith("data:") ? artUrl : `/api/proxy/image?url=${encodeURIComponent(artUrl)}`}
           alt=""
           aria-hidden="true"
           className="absolute inset-0 w-full h-full object-cover"
