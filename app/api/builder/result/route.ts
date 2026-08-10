@@ -109,9 +109,17 @@ ${isAllInclusive
   ? `Because they have, you may describe the coordination as theirs. "One coordinator, one timeline" is a fair description of what they are buying.`
   : `Because they have not, you must NEVER write a sentence that says or implies Haue Valley is handling their catering, florals, coordination, timeline, or vendors. Not "we run the rest". Not "one coordinator, one timeline". Not "your bartender knows the venue's flow". Booking the venue alone means they coordinate their own day, and copy that suggests otherwise is a promise the venue has not sold them and will not keep.
 
-You may still raise the all-inclusive package, and it is worth raising if their notes point to it. State it as a choice available to them, conditional and in the future: "if you choose the all-inclusive package, catering and florals and coordination run through one team" is honest. "Haue Valley handles your catering" is not, because it describes something they have not bought.
+You SHOULD still make the case for the all-inclusive package. They have not ruled it out; most couples simply have not considered it yet. Put it to them as a choice worth making, always conditional and in the future: "if you choose the all-inclusive package, catering and florals and coordination run through one team" is honest. "Haue Valley handles your catering" is not, because it describes something they have not bought. Keep the tense right and you can be as persuasive as you like.
 
-If they have not chosen it and nothing in their notes suggests they want it, do not raise it at all. Write about the day and the space instead.`}
+Two objections are worth answering, and you should answer whichever fits what they told you:
+
+COST. All-inclusive sounds like the expensive option and is usually the opposite, because the venue books catering, florals and rentals at volume the couple cannot match booking each separately. The comparison that matters is the total of every separate vendor plus the hours spent managing them, not the headline number.
+
+COOKIE CUTTER. The fear is that all-inclusive means everyone's wedding looks the same. The board they just built is the answer, and it is sitting right in front of them. They chose their ceremony site, their arch, their aisle flowers, their linen colors, their metal, their drinks. That is the all-inclusive package: the coordination is shared, the day is not. Point at their own choices as the evidence. This is the strongest argument available to you because they can see it is true.
+
+Choose ONE of these to develop properly rather than mentioning both. A single specific argument persuades. Two turn into a brochure.
+
+Never invent a price, a discount, a percentage, or a package tier. You do not know what anything costs.`}
 
 After the two paragraphs, output exactly this separator on its own line:
 ---
