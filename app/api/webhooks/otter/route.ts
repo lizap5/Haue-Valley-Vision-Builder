@@ -7,15 +7,15 @@ const AIRTABLE_BASE_ID        = process.env.AIRTABLE_BASE_ID!;
 const TOURS_TABLE_ID          = process.env.AIRTABLE_TOURS_TABLE_ID!;
 const EMAIL_DRAFTS_TABLE_ID   = process.env.AIRTABLE_EMAIL_DRAFTS_TABLE_ID!;
 const OTTER_SIGNING_KEY       = process.env.OTTER_WEBHOOK_SIGNING_KEY ?? "";
+const OTTER_WEBHOOK_SECRET    = process.env.OTTER_WEBHOOK_SECRET ?? "";
 
 const client = new Anthropic();
 
 // ---------------------------------------------------------------------------
-// Signature verification
+// Auth: HMAC signature (native Otter) OR shared secret token (Zapier bridge)
 // ---------------------------------------------------------------------------
 
-function verifySignature(rawBody: string, header: string | null): boolean {
-  if (!OTTER_SIGNING_KEY) return true;
+function verifyHmac(rawBody: string, header: string | null): boolean {
   if (!header) return false;
   try {
     const expected = createHmac("sha256", OTTER_SIGNING_KEY).update(rawBody).digest("hex");
@@ -26,21 +26,91 @@ function verifySignature(rawBody: string, header: string | null): boolean {
   }
 }
 
+function isAuthorized(req: NextRequest, rawBody: string): boolean {
+  // Shared-secret token (how Zapier authenticates): header or ?token= query param
+  if (OTTER_WEBHOOK_SECRET) {
+    const headerToken = req.headers.get("x-webhook-secret");
+    const queryToken  = new URL(req.url).searchParams.get("token");
+    if (headerToken === OTTER_WEBHOOK_SECRET || queryToken === OTTER_WEBHOOK_SECRET) {
+      return true;
+    }
+  }
+  // HMAC signature (native Otter Business webhook)
+  if (OTTER_SIGNING_KEY) {
+    return verifyHmac(rawBody, req.headers.get("x-hmac-sha256"));
+  }
+  // No auth configured — allow (dev only). Set OTTER_WEBHOOK_SECRET in production.
+  return !OTTER_WEBHOOK_SECRET && !OTTER_SIGNING_KEY;
+}
+
 // ---------------------------------------------------------------------------
-// Otter.ai payload types
+// Payload types & normalization
 // ---------------------------------------------------------------------------
 
-interface OtterPayload {
-  meta: { event: string };
-  data: {
-    id: string;
+// Native Otter shape (nested) — kept for future Business API use
+interface OtterNativePayload {
+  meta?: { event?: string };
+  data?: {
+    id?: string;
     title?: string;
     url?: string;
     owner?: { email?: string; first_name?: string; last_name?: string };
     abstract_summary?: string;
-    action_items?: Array<{ text: string }>;
     transcript?: string;
     calendar_guests?: Array<{ email: string; name?: string }>;
+  };
+}
+
+// Flat shape — what you build in the Zapier "POST" webhook step
+interface ZapierFlatPayload {
+  transcript?: string;
+  title?: string;
+  summary?: string;
+  url?: string;
+  guest_email?: string;
+  guest_name?: string;
+  couple_names?: string;
+  email?: string;
+}
+
+// Everything downstream uses this normalized shape
+interface NormalizedTour {
+  id: string;
+  title: string;
+  url: string;
+  summary: string;
+  transcript: string;
+  guests: Array<{ email: string; name?: string }>;
+}
+
+function normalizePayload(body: OtterNativePayload & ZapierFlatPayload): NormalizedTour {
+  // Native nested shape wins if present
+  if (body.data?.transcript || body.meta?.event) {
+    const d = body.data ?? {};
+    const guests = d.calendar_guests ?? [];
+    if (d.owner?.email) guests.push({ email: d.owner.email, name: d.owner.first_name });
+    return {
+      id:         d.id ?? "unknown",
+      title:      d.title ?? "",
+      url:        d.url ?? "",
+      summary:    d.abstract_summary ?? "",
+      transcript: d.transcript ?? "",
+      guests,
+    };
+  }
+
+  // Flat Zapier shape
+  const guests: Array<{ email: string; name?: string }> = [];
+  if (body.guest_email) guests.push({ email: body.guest_email, name: body.guest_name });
+  if (body.email && body.email !== body.guest_email) guests.push({ email: body.email, name: body.couple_names });
+
+  return {
+    id:         "zapier",
+    title:      body.title ?? "",
+    url:        body.url ?? "",
+    summary:    body.summary ?? "",
+    transcript: body.transcript ?? "",
+    guests,
   };
 }
 
@@ -168,20 +238,26 @@ async function generateFollowUpDraft(
   const f = tourRecord.fields;
   const coupleNames   = (f["Couple Names"] as string) || insights.couple_names_mentioned || "there";
   const firstName     = coupleNames.split(/[&,]/)[0].trim();
-  const visionStyle   = (f["Room Feeling"] as string) || "";
-  const floralStyle   = (f["Floral Style"] as string) || "";
+  const vibe          = (f["Vibe"] as string) || (f["Room Feeling"] as string) || "";
   const season        = (f["Season"] as string) || "";
   const ceremony      = (f["Ceremony Location"] as string) || "";
+  const aisle         = (f["Aisle Flowers"] as string) || "";
+  const arch          = (f["Arch Selection"] as string) || "";
+  const linens        = (f["Linen Colors"] as string) || "";
+  const metal         = (f["Accent Metal"] as string) || "";
   const priority      = (f["The One Thing"] as string) || "";
-  const drink         = (f["Signature Drink"] as string) || "";
+  const drinks        = (f["Signature Drinks"] as string) || (f["Signature Drink"] as string) || "";
 
   const visionContext = [
-    visionStyle  && `Their vision builder described wanting guests to feel: ${visionStyle}`,
-    floralStyle  && `Floral style: ${floralStyle}`,
-    season       && `Season: ${season}`,
-    ceremony     && `Ceremony space preference before the tour: ${ceremony}`,
-    priority     && `The one thing that mattered most to them: ${priority}`,
-    drink        && `Signature drink they mentioned: ${drink}`,
+    vibe     && `Their chosen vibe: ${vibe}`,
+    season   && `Season: ${season}`,
+    ceremony && `Ceremony space preference before the tour: ${ceremony}`,
+    aisle    && `Aisle flowers they picked: ${aisle}`,
+    arch     && `Arch or arbor they picked: ${arch}`,
+    linens   && `Linen and napkin colors: ${linens}`,
+    metal    && `Accent metal: ${metal}`,
+    priority && `The one thing that mattered most to them: ${priority}`,
+    drinks   && `Signature drinks they chose: ${drinks}`,
   ].filter(Boolean).join("\n");
 
   const prompt = `You are drafting a follow-up email for Haue Valley Weddings, a private estate wedding venue in Pacific, MO. This email will be reviewed by the Haue Valley team before being sent to the couple.
@@ -260,25 +336,26 @@ const SENTIMENT_LABELS: Record<string, string> = {
 
 export async function POST(req: NextRequest) {
   const rawBody = await req.text();
-  const signature = req.headers.get("x-hmac-sha256");
 
-  if (!verifySignature(rawBody, signature)) {
-    return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+  if (!isAuthorized(req, rawBody)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let payload: OtterPayload;
+  let payload: OtterNativePayload & ZapierFlatPayload;
   try {
     payload = JSON.parse(rawBody);
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  if (payload.meta?.event !== "conversation.completed") {
+  // Ignore non-completion events from the native Otter webhook.
+  // Zapier only fires on completed conversations, so no meta.event = allow.
+  if (payload.meta?.event && payload.meta.event !== "conversation.completed") {
     return NextResponse.json({ ok: true, ignored: true });
   }
 
-  const data = payload.data;
-  const transcript = data.transcript ?? "";
+  const data = normalizePayload(payload);
+  const transcript = data.transcript;
 
   if (!transcript.trim()) {
     return NextResponse.json({ ok: false, error: "Empty transcript" }, { status: 400 });
@@ -288,14 +365,14 @@ export async function POST(req: NextRequest) {
     // Analyze transcript
     const insights = await analyzeTranscript(
       transcript,
-      data.title ?? "",
-      data.abstract_summary ?? ""
+      data.title,
+      data.summary
     );
 
     // Find matching Tours record (full record, not just ID)
     let tourRecord: ToursRecord | null = null;
 
-    for (const guest of data.calendar_guests ?? []) {
+    for (const guest of data.guests) {
       if (guest.email) {
         tourRecord = await findToursByEmail(guest.email);
         if (tourRecord) break;

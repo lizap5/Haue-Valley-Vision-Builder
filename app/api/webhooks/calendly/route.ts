@@ -32,7 +32,7 @@ async function findRecordByEmail(email: string): Promise<string | null> {
   return data.records?.[0]?.id ?? null;
 }
 
-async function updateAirtableRecord(recordId: string, tourDate: string, inviteeName: string): Promise<void> {
+async function updateAirtableRecord(recordId: string, tourDate: string, isoDateTime: string): Promise<void> {
   await fetch(
     `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${TOURS_TABLE_ID}/${recordId}`,
     {
@@ -43,8 +43,9 @@ async function updateAirtableRecord(recordId: string, tourDate: string, inviteeN
       },
       body: JSON.stringify({
         fields: {
-          "Tour Date":   tourDate,
-          "Tour Status": "Scheduled",
+          "Tour Date":         tourDate,
+          "Tour ISO DateTime": isoDateTime,
+          "Tour Status":       "Scheduled",
         },
       }),
     }
@@ -98,7 +99,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, matched: false });
     }
 
-    await updateAirtableRecord(recordId, tourDate, name);
+    await updateAirtableRecord(recordId, tourDate, scheduledAt);
     console.log(`Tour scheduled for ${name} (${email}) on ${tourDate} — Airtable record ${recordId} updated`);
 
     return NextResponse.json({ ok: true, matched: true, tourDate });

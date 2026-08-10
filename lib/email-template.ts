@@ -1,4 +1,8 @@
 import { BuilderState } from "./builder-state";
+import {
+  VIBES, AISLE_FLOWERS, ARCHES, LINEN_COLORS, ACCENT_METALS,
+  SIGNATURE_DRINKS, CEREMONY_LOCATIONS, labelFor,
+} from "./calculator-options";
 
 interface VisionContent {
   heading: string;
@@ -121,7 +125,7 @@ export function buildVisionEmail(state: BuilderState, content: VisionContent): s
           <!-- CTA button -->
           <tr>
             <td align="center" style="padding:0 48px 48px;">
-              <a href="https://hauevalleyweddings.com/contact"
+              <a href="${process.env.NEXT_PUBLIC_CALENDLY_URL ?? "https://hauevalleyweddings.com/contact"}"
                  style="display:inline-block;font-family:Arial,Helvetica,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:${COLORS.white};background-color:${COLORS.green};text-decoration:none;padding:16px 40px;">
                 Schedule Your Tour
               </a>
@@ -213,6 +217,24 @@ const GUEST_COUNT_LABELS: Record<number, string> = {
   201: "200+",
 };
 
+
+function linenLabel(state: BuilderState): string | undefined {
+  const linens = (state.linen_colors ?? []).map((v) => labelFor(LINEN_COLORS, v)).filter(Boolean);
+  return linens.length ? linens.join(", ") : undefined;
+}
+
+function drinksLabel(state: BuilderState): string | undefined {
+  if (state.alcohol_opt_out) return "No alcohol, mocktails";
+  const drinks = (state.signature_drinks ?? []).map((v) => labelFor(SIGNATURE_DRINKS, v)).filter(Boolean);
+  return drinks.length ? drinks.join(", ") : undefined;
+}
+
+function ceremonyLabel(state: BuilderState): string | undefined {
+  if (!state.ceremony_location) return undefined;
+  if (state.ceremony_location === "unsure") return "Undecided";
+  return labelFor(CEREMONY_LOCATIONS, state.ceremony_location);
+}
+
 function row(label: string, value: string | undefined): string {
   if (!value) return "";
   return `<tr>
@@ -223,15 +245,16 @@ function row(label: string, value: string | undefined): string {
 
 function buildSummaryRows(state: BuilderState): string {
   const guestLabel = state.guest_count ? GUEST_COUNT_LABELS[state.guest_count] : undefined;
-  const colorsLabel = state.colors_chosen?.length ? state.colors_chosen.join(", ") : undefined;
 
   const rows = [
-    row("Feeling",    ROOM_FEELING_LABELS[state.room_feeling ?? ""]),
-    row("Florals",    FLORAL_STYLE_LABELS[state.floral_style ?? ""]),
-    row("Colors",     colorsLabel),
+    row("Vibe",       labelFor(VIBES, state.vibe) || undefined),
+    row("Ceremony",   ceremonyLabel(state)),
+    row("Aisle",      state.aisle_flowers && state.aisle_flowers !== "unsure" ? labelFor(AISLE_FLOWERS, state.aisle_flowers) : undefined),
+    row("Arch",       state.arch_selection && state.arch_selection !== "unsure" ? labelFor(ARCHES, state.arch_selection) : undefined),
+    row("Linens",     linenLabel(state)),
+    row("Metal",      labelFor(ACCENT_METALS, state.accent_metal) || undefined),
     row("Season",     SEASON_LABELS[state.season ?? ""]),
-    row("Ceremony",   CEREMONY_LABELS[state.ceremony_location ?? ""]),
-    row("Drink",      state.signature_drink),
+    row("Drinks",     drinksLabel(state)),
     row("One thing",  PRIORITY_LABELS[state.priority ?? ""]),
     row("Guests",     guestLabel),
     row("Date",       state.wedding_date),
@@ -247,7 +270,6 @@ function buildSummaryRows(state: BuilderState): string {
 export function buildStaffNotificationEmail(state: BuilderState, content: VisionContent): string {
   const coupleNames = content.heading.replace(", this is your Haue Valley wedding.", "");
   const guestLabel   = state.guest_count ? GUEST_COUNT_LABELS[state.guest_count] : "Not specified";
-  const colorsLabel  = state.colors_chosen?.length ? state.colors_chosen.join(", ") : "Not specified";
   const isAllIn      = state.all_inclusive_intent || state.priority === "all_inclusive";
 
   const allInBanner = isAllIn ? `
@@ -326,12 +348,14 @@ export function buildStaffNotificationEmail(state: BuilderState, content: Vision
                 ${staffRow("Guests",     guestLabel)}
                 ${staffRow("Budget",     state.budget_range || "Not provided")}
                 ${staffRow("How found",  state.heard_about || "Not provided")}
-                ${staffRow("Feeling",    ROOM_FEELING_LABELS[state.room_feeling ?? ""] || "Not specified")}
-                ${staffRow("Florals",    FLORAL_STYLE_LABELS[state.floral_style ?? ""] || "Not specified")}
-                ${staffRow("Colors",     colorsLabel)}
+                ${staffRow("Vibe",       labelFor(VIBES, state.vibe) || "Not specified")}
+                ${staffRow("Ceremony",   ceremonyLabel(state) || "Not specified")}
+                ${staffRow("Aisle",      state.aisle_flowers && state.aisle_flowers !== "unsure" ? labelFor(AISLE_FLOWERS, state.aisle_flowers) : "Undecided")}
+                ${staffRow("Arch",       state.arch_selection && state.arch_selection !== "unsure" ? labelFor(ARCHES, state.arch_selection) : "Undecided")}
+                ${staffRow("Linens",     linenLabel(state) || "Not specified")}
+                ${staffRow("Metal",      labelFor(ACCENT_METALS, state.accent_metal) || "Not specified")}
                 ${staffRow("Season",     SEASON_LABELS[state.season ?? ""] || "Not specified")}
-                ${staffRow("Ceremony",   CEREMONY_LABELS[state.ceremony_location ?? ""] || "Not specified")}
-                ${staffRow("Drink",      state.signature_drink || "Not provided")}
+                ${staffRow("Drinks",     drinksLabel(state) || "Not provided")}
                 ${staffRow("One thing",  PRIORITY_LABELS[state.priority ?? ""] || "Not specified")}
                 ${staffRow("All-incl.",  isAllIn ? "Yes — mention this" : undefined)}
               </table>
