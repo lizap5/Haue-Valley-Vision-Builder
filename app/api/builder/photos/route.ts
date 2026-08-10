@@ -236,11 +236,22 @@ function scoreRecord(record: AirtableRecord, state: BuilderState): number {
 
   // Their exact aisle flowers and arch: +4 each. These are specific enough
   // that a match is nearly always the right photo to show.
+  const skippedAisle = !state.aisle_flowers || state.aisle_flowers === "unsure";
+  const skippedArch = !state.arch_selection || state.arch_selection === "unsure";
+
   const aisleTag = labelFor(AISLE_FLOWERS, state.aisle_flowers);
-  if (aisleTag && state.aisle_flowers !== "unsure" && tags(record, "aisle").includes(aisleTag)) score += 4;
+  if (aisleTag && !skippedAisle && tags(record, "aisle").includes(aisleTag)) score += 4;
 
   const archTag = labelFor(ARCHES, state.arch_selection);
-  if (archTag && state.arch_selection !== "unsure" && tags(record, "arch").includes(archTag)) score += 4;
+  if (archTag && !skippedArch && tags(record, "arch").includes(archTag)) score += 4;
+
+  // Skipping these steps is an answer, not an absence. A photo built around a
+  // named arch or aisle arrangement puts a decision on the board that the
+  // couple deliberately left open, and reads as though they had chosen it.
+  // Push those down rather than barring them, so the board still fills when
+  // the library has little else.
+  if (skippedArch && tags(record, "arch").length) score -= 3;
+  if (skippedAisle && tags(record, "aisle").length) score -= 3;
 
   // Their ceremony location: +4
   const ceremonyTag = CEREMONY_LOCATION_TAG_MAP[state.ceremony_location ?? ""];
