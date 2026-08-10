@@ -376,11 +376,27 @@ export async function POST(req: NextRequest) {
       const atChosenLocation = (s: { record: AirtableRecord }) =>
         ceremonyLocationsOf(s.record).includes(chosenCeremonyTag!);
 
+      // Showing a couple who picked the Forest View a photo of the indoor
+      // Fireplace is worse than showing them nothing: it is a different room.
+      // Only two photos carry Forest View, so a fallback that accepts any
+      // ceremony photo takes over almost immediately. A photo of a known
+      // different site is therefore barred outright; one whose site is simply
+      // unrecorded is still fair game.
+      const notElsewhere = (s: { record: AirtableRecord }) => {
+        const locations = ceremonyLocationsOf(s.record);
+        return locations.length === 0 || locations.includes(chosenCeremonyTag!);
+      };
+
       const hit =
-        (slot === "Ceremony" && chosenCeremonyTag
-          ? scored.find((s) => preferred(s) && atChosenLocation(s)) ??
-            scored.find((s) => inSpace(s) && atChosenLocation(s))
-          : undefined) ?? scored.find(preferred) ?? scored.find(inSpace);
+        slot === "Ceremony" && chosenCeremonyTag
+          ? // Their site first, then photos with no site recorded. Never a
+            // photo of one of the other sites, even if that leaves the slot
+            // empty, because the wrong room is a worse answer than none.
+            scored.find((s) => preferred(s) && atChosenLocation(s)) ??
+            scored.find((s) => inSpace(s) && atChosenLocation(s)) ??
+            scored.find((s) => preferred(s) && notElsewhere(s)) ??
+            scored.find((s) => inSpace(s) && notElsewhere(s))
+          : scored.find(preferred) ?? scored.find(inSpace);
 
       if (hit) {
         claim(hit.record);
