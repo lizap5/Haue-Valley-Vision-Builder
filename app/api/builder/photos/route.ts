@@ -69,9 +69,11 @@ export interface ScoredPhoto {
   space?: string;
 }
 
-// The three slots every mood board must fill, in display order. Each slot
-// accepts several Space Tags values, because the library's vocabulary is more
-// granular than the board is (a Head Table photo is still a reception photo).
+// The three slots every mood board must fill, in FILL order, which is not the
+// display order: the page looks each slot up by name. Order matters because
+// earlier slots claim their photo first. Each slot accepts several Space Tags
+// values, because the library's vocabulary is more granular than the board is
+// (a Head Table photo is still a reception photo).
 const SPACE_SLOTS: { slot: string; accepts: string[]; prefersNot?: string[] }[] = [
   {
     slot: "Ceremony",
@@ -82,20 +84,21 @@ const SPACE_SLOTS: { slot: string; accepts: string[]; prefersNot?: string[] }[] 
     ],
   },
   {
-    slot: "Reception",
-    accepts: ["Reception", "Head Table", "Dance Floor"],
-    // A centerpiece close-up is technically a reception photo but does not
-    // show the room. Prefer anything else, and fall back only if the library
-    // has nothing wider.
-    prefersNot: ["Detail Shot"],
-  },
-  {
     // Was "Upper Patio", which no photo ever carried, so the slot always read
-    // "coming soon". A second reception photo shows the whole space, which the
-    // first slot's close-up cannot. `used` guarantees it is a different photo.
+    // "coming soon". This is the wide shot of the room, and it is filled
+    // BEFORE the Reception slot below: a close-up of a centerpiece is welcome
+    // on the board, but only once the whole space has been shown. Filling in
+    // the other order lets the one wide photo get taken by the Reception slot,
+    // leaving two close-ups and no room. Display order lives in the page.
     slot: "Reception Space",
     accepts: ["Reception", "Dance Floor", "Head Table"],
     prefersNot: ["Detail Shot"],
+  },
+  {
+    // Anything reception, close-ups included. `used` guarantees it differs
+    // from the wide shot above.
+    slot: "Reception",
+    accepts: ["Reception", "Head Table", "Dance Floor"],
   },
 ];
 
