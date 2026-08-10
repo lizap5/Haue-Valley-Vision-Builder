@@ -21,10 +21,10 @@ export const VIBES: TileOption[] = [
 ];
 
 export const AISLE_FLOWERS: TileOption[] = [
-  { value: "feyre",   label: "The Feyre Aisle Flowers",   image: "/images/aisle/feyre.jpg" },
-  { value: "cassian", label: "The Cassian Aisle Flowers", image: "/images/aisle/cassian.jpg" },
-  { value: "gwen",    label: "The Gwen Aisle Flowers",    image: "/images/aisle/gwen.jpg" },
-  { value: "velaris", label: "The Velaris Aisle Flowers", image: "/images/aisle/velaris.jpg" },
+  { value: "feyre",   label: "The Feyre Aisle Flowers",   image: "/images/aisle/feyre-aisle.jpg" },
+  { value: "cassian", label: "The Cassian Aisle Flowers", image: "/images/aisle/cassian-aisle.jpg" },
+  { value: "gwen",    label: "The Gwen Aisle Flowers",    image: "/images/aisle/gwen-aisle.jpg" },
+  { value: "velaris", label: "The Velaris Aisle Flowers", image: "/images/aisle/velaris-aisle.jpg" },
 ];
 
 export const ARCHES: TileOption[] = [
