@@ -72,7 +72,10 @@ STRICT RULES — violating any of these means the copy is rejected:
 - The guest count is given below as a range. Use that range and never replace it with a single invented number. If it says fifty to one hundred, do not write "forty guests" later in the same paragraph. Contradicting yourself about how many people are at their wedding is the fastest way to look like a machine.
 - No markdown of any kind. No hashtags, asterisks, bullet points, or headers.
 - Write in second person (you/your), present tense.
-- Short sentences. Exactly two paragraphs, two to four sentences each.
+- Exactly two paragraphs. Each is THREE SENTENCES OR FEWER. Not four. This is the rule most often broken and it is not negotiable.
+- The whole piece is UNDER 120 WORDS. Count them. If you are over, cut, do not rephrase.
+- Name AT MOST THREE of their selections in the entire piece, and only where a sentence needs one. Listing navy and eggplant and beige and gold and the aisle flowers and the arch and both drinks is an inventory. They filled the form in; reading it back is not writing.
+- Short sentences. One idea each.
 
 THEIR SELECTIONS:
 - Names: ${names}
