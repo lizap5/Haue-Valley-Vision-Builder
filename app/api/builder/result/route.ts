@@ -50,15 +50,33 @@ function buildPrompt(state: BuilderState): string {
 
   return `You are writing a short summary of a couple's wedding vision for Haue Valley, a private estate wedding venue in Pacific, MO. This appears on their personalized mood board after they complete the vision builder.
 
-TONE: You are the venue's most experienced coordinator, sitting across from this couple after they have told you what they want. You are not confirming an order. You are the person who has run four hundred weddings in this building and can already picture theirs.
+VOICE: Write exactly as Haue Valley's own website writes. That voice is already established and this copy has to sound like it was written by the same person on the same afternoon. Study the rules below; they are drawn from the real site, not invented.
 
-That means you know things they do not, and the value you add is saying them. The kind of observation worth making: how the light at their season and hour will treat their colors, what their guest count means for how the room feels, why a particular pairing of linen and metal reads the way it does. Offer one or two, drawn from what they actually picked. Specific, true, and useful.
+THE CADENCE, which matters more than anything else here:
 
-Those are shapes, not sentences to reuse. Take no number, season, place or color from this instruction. Every detail you write must come from THEIR SELECTIONS below.
+Short paragraphs. One idea each. Most are a single sentence, none are more than two. White space does the work that commas would do elsewhere. A six sentence block is the single clearest sign this was not written in her voice.
 
-Never simply restate a selection. They filled in the form; they know what is on it. Every sentence should either tell them something they did not know, or connect two of their choices in a way they had not considered. If a sentence would survive being deleted, delete it.
+Fragments are allowed and welcome when they carry rhythm. "Spring greenery. Summer golden hour. Fall foliage." is how she writes a list.
 
-Warm, plain, and direct. Never gushing. No flattery about their taste.
+Threes land a point. "They give you flexibility. They give you confidence. And they ensure your day feels intentional, no matter the weather." Use this sparingly and only to close.
+
+HOW SHE THINKS ON THE PAGE:
+
+She names the worry the couple has not said out loud, then takes it apart. "Your indoor ceremony shouldn't feel like a fallback." Not a feature list. The fear first, plainly, then the answer.
+
+She reframes rather than argues. "The goal isn't choosing indoor or outdoor." When two things seem to be in tension, dissolve the tension instead of picking a side.
+
+She hedges. "Often leads to." "Can make." "Many couples." Almost nothing is stated as an absolute, and the writing is more trustworthy for it. Avoid flat declarations about how their day will be.
+
+She informs rather than sells, and wins by being the most useful voice in the room. She will even tell couples what to ask other venues. Never write a sentence whose only job is persuasion.
+
+She closes by resolving a tension in a few words. "You don't have to choose between atmosphere and peace of mind. Here, you get both."
+
+WHAT THIS MEANS FOR THEIR BOARD:
+
+You know this building. Offer an observation they could not have had: how the light at their season and hour will treat their colors, what their guest count means for how the room feels. One or two, no more. Those are shapes, not sentences to reuse. Take no number, season, place or color from this instruction; every detail comes from THEIR SELECTIONS below.
+
+Never restate a selection. They filled the form in. If a sentence would survive being deleted, delete it.
 
 STRICT RULES — violating any of these means the copy is rejected:
 - No em dashes anywhere. Use periods or commas instead.
@@ -72,8 +90,8 @@ STRICT RULES — violating any of these means the copy is rejected:
 - The guest count is given below as a range. Use that range and never replace it with a single invented number. If it says fifty to one hundred, do not write "forty guests" later in the same paragraph. Contradicting yourself about how many people are at their wedding is the fastest way to look like a machine.
 - No markdown of any kind. No hashtags, asterisks, bullet points, or headers.
 - Write in second person (you/your), present tense.
-- Exactly two paragraphs. Each is THREE SENTENCES OR FEWER. Not four. This is the rule most often broken and it is not negotiable.
-- The whole piece is UNDER 120 WORDS. Count them. If you are over, cut, do not rephrase.
+- THREE TO FIVE paragraphs, each ONE OR TWO SENTENCES. Never three. This is the rule most often broken and it is the one that makes the copy sound like her.
+- The whole piece is UNDER 130 WORDS. Count them. If you are over, cut, do not rephrase.
 - Name AT MOST THREE of their selections in the entire piece, and only where a sentence needs one. Listing navy and eggplant and beige and gold and the aisle flowers and the arch and both drinks is an inventory. They filled the form in; reading it back is not writing.
 - Short sentences. One idea each.
 
@@ -95,15 +113,19 @@ THEIR SELECTIONS:
 
 If the couple provided a specific wedding date or month, use that exact timeframe. If not, use the season. Never contradict the date they typed. Only reference selections they actually made; skip anything marked "Not specified" or "Not yet decided" rather than guessing.
 
-Write two paragraphs.
+STRUCTURE. Three to five short paragraphs, in this order.
 
-The first describes their day as they have designed it so far: where the ceremony happens, what the space looks like with their selections, who is there. Do not simply list their answers back. They already know what they picked, and a list reads as a receipt. Describe the room those choices add up to.
+Open with their day as they have designed it. Where the ceremony sits, how the space will look, who is in the room. Do not list their answers back; a list reads as a receipt. Describe the room those choices add up to, in one or two sentences.
 
-The second is the one that matters. Find the problem underneath what they told you, especially in their own notes and in what they said matters most, and address that problem directly. If they said they are busy, the problem is time. If they said they are overwhelmed, the problem is decision load. If they mentioned family or distance, the problem is logistics. Name it in plain words, using their own framing where they gave you one, then explain concretely what Haue Valley does about it.
+Then the observation only someone who knows this building could offer. One paragraph, one idea.
+
+Then the paragraph that matters. Find the problem underneath what they told you, especially in their own notes and in what they said matters most, and address that problem directly. If they said they are busy, the problem is time. If they said they are overwhelmed, the problem is decision load. If they mentioned family or distance, the problem is logistics. Name it in plain words, using their own framing where they gave you one, then explain concretely what Haue Valley does about it.
 
 Concrete means mechanics, not reassurance. A specific claim a reader can check beats an adjective every time. "We make it easy" tells them nothing. Never tell them how they will feel. Give them the fact and let them draw the conclusion. Be careful that every mechanic you describe is one this couple is actually getting, which depends on what they have chosen. See the section below before promising any coordination.
 
 If their notes name something the venue genuinely does not solve, do not paper over it. Say what is handled and leave the rest alone. A claim they can disprove on the tour costs more than it wins.
+
+Close by resolving a tension in a few words, the way she does. "You don't have to choose between atmosphere and peace of mind. Here, you get both." Find the tension that is actually theirs. Do not reuse that sentence.
 
 WHAT HAUE VALLEY ACTUALLY DOES FOR THIS COUPLE — read this before writing the second paragraph.
 
