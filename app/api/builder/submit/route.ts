@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
       "Email":                    state.email ?? "",
       "Wedding Date":             state.wedding_date ?? "",
       "Photo Style":              PHOTO_STYLE_LABELS[state.photography_style ?? ""] ?? "",
-      "Vibe":                     labelFor(VIBES, state.vibe),
+      "Style Name":                     labelFor(VIBES, state.vibe),
       "Ceremony Location":        state.ceremony_location === "unsure" ? "Undecided" : labelFor(CEREMONY_LOCATIONS, state.ceremony_location),
       "Aisle Flowers":            state.aisle_flowers === "unsure" ? "Undecided" : labelFor(AISLE_FLOWERS, state.aisle_flowers),
       "Arch Selection":           state.arch_selection === "unsure" ? "Undecided" : labelFor(ARCHES, state.arch_selection),
