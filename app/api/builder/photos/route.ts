@@ -298,7 +298,10 @@ async function fetchAllRecords(): Promise<AirtableRecord[]> {
       next: { revalidate: 300 }, // cache for 5 minutes
     });
 
-    if (!res.ok) throw new Error(`Airtable error: ${res.status}`);
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      throw new Error(`Airtable error: ${res.status} ${body}`);
+    }
     const data = await res.json();
     records.push(...data.records);
     offset = data.offset;
