@@ -489,7 +489,18 @@ export async function POST(req: NextRequest) {
     }
 
     // --- Three more style-matched photos, spread across the score range ---
-    const remaining = scored.filter((s) => isFresh(s.record));
+    // A photo carrying only other couples' vibes is barred here rather than
+    // merely penalised. The picks are taken from fixed positions in the
+    // ranking, so a penalty still let a Garden Party tile reach a Colorful
+    // Celebration board from further down the list. Photos with no vibe
+    // recorded are unaffected: no vibe is not the wrong vibe.
+    const chosenVibeTag = VIBE_TAG_MAP[state.vibe ?? ""];
+    const rightVibe = (r: AirtableRecord) => {
+      if (!chosenVibeTag) return true;
+      const recordVibes = tags(r, "vibe");
+      return recordVibes.length === 0 || recordVibes.includes(chosenVibeTag);
+    };
+    const remaining = scored.filter((s) => isFresh(s.record) && rightVibe(s.record));
     const stylePicks: ScoredPhoto[] = [];
     const indices = [0, 3, 7];
     for (const i of indices) {

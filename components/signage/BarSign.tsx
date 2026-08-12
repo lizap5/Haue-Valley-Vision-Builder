@@ -37,12 +37,16 @@ export default function BarSign({ drink, drinkImageUrl, accentColor, textColor }
 
       {/* Text section */}
       <div className="relative z-20 flex flex-col items-center pt-10 pb-3 px-6 text-center">
-        <p
-          className="font-sans text-[9px] tracking-[0.35em] uppercase mb-3"
-          style={{ color: accentColor }}
-        >
-          Signature
-        </p>
+        {/* The name can already begin with "Signature" when the couple named
+            no drink and the fallback took over, which printed it twice. */}
+        {!/^signature\b/i.test(drink.trim()) && (
+          <p
+            className="font-sans text-[9px] tracking-[0.35em] uppercase mb-3"
+            style={{ color: accentColor }}
+          >
+            Signature
+          </p>
+        )}
         <p
           className="font-serif font-semibold leading-none mb-1"
           style={{
@@ -74,10 +78,13 @@ export default function BarSign({ drink, drinkImageUrl, accentColor, textColor }
 
       {/* Drink image */}
       <div className="relative z-0 w-full flex-1">
+        {/* Contained, not cropped. The generated photograph is portrait and
+            taller than the space left under the lettering, so object-cover
+            was cutting the glass in half. */}
         <img
           src={drinkImageUrl}
           alt={drink}
-          className="w-full h-full object-cover object-top"
+          className="w-full h-full object-contain object-bottom"
         />
       </div>
     </div>
