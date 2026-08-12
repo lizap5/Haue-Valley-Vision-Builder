@@ -394,14 +394,28 @@ export async function POST(req: NextRequest) {
     // is never a key, or one unnamed record would shadow every other.
     const keysOf = (r: AirtableRecord): string[] => {
       const keys: string[] = [];
+      // Names and filenames share one namespace, stripped of extension and
+      // punctuation, because they are two spellings of the same thing: a
+      // record called "Garden Party" holding garden-party.jpg was matching
+      // neither on "name:garden party" nor on "file:garden-party.jpg", and
+      // the picture reached two slots on one board.
+      const pushLabel = (value?: string) => {
+        const v = String(value ?? "")
+          .trim()
+          .toLowerCase()
+          .replace(/\.(jpe?g|png|webp|gif|heic)$/i, "")
+          .replace(/[^a-z0-9]+/g, " ")
+          .trim();
+        if (v) keys.push(`label:${v}`);
+      };
       const push = (prefix: string, value?: string | number) => {
         const v = String(value ?? "").trim().toLowerCase();
         if (v) keys.push(`${prefix}:${v}`);
       };
-      push("name", r.fields["Image Name"]);
+      pushLabel(r.fields["Image Name"]);
       push("drive", r.fields["Google Drive Link"]);
       const attachment = r.fields["Image Preview"]?.[0];
-      push("file", attachment?.filename);
+      pushLabel(attachment?.filename);
       // Last resort, and the only key two copies of one file always share:
       // the byte count. Names, filenames and Drive links can all differ
       // between records holding the identical picture. Two genuinely

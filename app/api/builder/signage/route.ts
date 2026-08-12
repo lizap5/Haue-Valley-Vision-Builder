@@ -4,6 +4,13 @@ import { signagePalette, signageArtPrompt } from "@/lib/signage-style";
 
 export const maxDuration = 60;
 
+// A couple hosting no alcohol still gets a bar sign. They are not having
+// nothing at the bar, they are having something else, and a grey placeholder
+// where everyone else sees a drink reads as an oversight.
+function buildMocktailPrompt(): string {
+  return `Professional product photography of two elegant non-alcoholic mocktails. Tall crystal cut-glass tumblers with sparkling clear and pale pink drinks, fresh citrus and berry garnishes, mint sprigs. Sitting on a marble surface. Soft natural light from the upper left casting gentle shadows. Warm cream ivory background. High-end editorial style. No bottles, no spirits, no wine glasses. No text, no labels, no signs, no words anywhere in the image.`;
+}
+
 function buildDrinkPrompt(drink: string): string {
   return `Professional product photography of a "${drink}" cocktail. Crystal cut-glass tumbler or appropriate glassware, sitting on a marble or stone surface. Soft natural light from the upper left casting gentle shadows. A single olive branch sprig on the left side. Warm cream ivory background. High-end editorial style, beautiful garnish appropriate to the drink. No text, no labels, no signs, no words anywhere in the image.`;
 }
@@ -60,7 +67,7 @@ export async function POST(req: NextRequest) {
     // enough concurrency to get the later two throttled, which is why the
     // signs came back bare while the drink arrived fine.
     const [drinkImageUrl, artUrl] = await Promise.all([
-      teetotal ? Promise.resolve(null) : generate(openai, buildDrinkPrompt(drink)),
+      generate(openai, teetotal ? buildMocktailPrompt() : buildDrinkPrompt(drink)),
       generate(openai, signageArtPrompt(state)),
     ]);
 
@@ -70,7 +77,7 @@ export async function POST(req: NextRequest) {
       welcomeArtUrl: artUrl,
       seatingArtUrl: artUrl,
       colors: signagePalette(state),
-      drink,
+      drink: teetotal ? "Mocktails" : drink,
       // Surfaced so a blank sign can be told from a missing key without
       // reading the function logs.
       artGenerated: Boolean(artUrl),
