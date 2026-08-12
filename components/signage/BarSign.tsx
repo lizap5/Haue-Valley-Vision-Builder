@@ -47,11 +47,13 @@ export default function BarSign({ drink, drinkImageUrl, accentColor, textColor }
             Signature
           </p>
         )}
+        {/* Sized down for a longer name, and allowed to wrap. A name that
+            overruns silently printed straight through the border. */}
         <p
-          className="font-serif font-semibold leading-none mb-1"
+          className="font-serif font-semibold leading-none mb-1 max-w-full break-words"
           style={{
             color: textColor,
-            fontSize: "clamp(1.6rem, 8vw, 2.2rem)",
+            fontSize: main.length > 16 ? "clamp(1rem, 5vw, 1.4rem)" : "clamp(1.6rem, 8vw, 2.2rem)",
             letterSpacing: "0.05em",
           }}
         >
@@ -59,10 +61,10 @@ export default function BarSign({ drink, drinkImageUrl, accentColor, textColor }
         </p>
         {sub && (
           <p
-            className="font-script leading-none"
+            className="font-script leading-tight max-w-full break-words"
             style={{
               color: textColor,
-              fontSize: "clamp(1.8rem, 9vw, 2.4rem)",
+              fontSize: sub.length > 16 ? "clamp(1.1rem, 5vw, 1.5rem)" : "clamp(1.8rem, 9vw, 2.4rem)",
             }}
           >
             {sub}

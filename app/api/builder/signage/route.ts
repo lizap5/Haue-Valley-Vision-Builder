@@ -54,12 +54,13 @@ export async function POST(req: NextRequest) {
     // signature_drink an empty string rather than undefined, so the old
     // fallback quietly generated a cocktail from a nameless drink.
     const teetotal = state.alcohol_opt_out === true;
-    // Whatever they actually named, tiles first and then the box they typed
-    // in. The old fallback of "Signature Cocktail" printed as SIGNATURE
-    // Cocktail under the sign's own Signature label.
+    // Only the tiles they tapped may name the sign. The free text box holds
+    // a sentence, not a drink: "I like margaritas and Skip likes dark beer"
+    // was printed across a couple's bar signage. That answer belongs in
+    // Airtable and the staff email, where it is read by a person, and
+    // nowhere near the artwork.
     const drink =
       state.signature_drink?.trim() ||
-      state.other_drinks?.trim() ||
       (state.alcohol_opt_out ? "Mocktails" : "Cocktails");
 
     if (!process.env.OPENAI_API_KEY) {
