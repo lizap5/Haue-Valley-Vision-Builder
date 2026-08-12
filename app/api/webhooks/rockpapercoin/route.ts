@@ -85,7 +85,7 @@ async function findToursByName(name: string): Promise<ToursRecord | null> {
 }
 
 async function updateToursRecord(recordId: string, fields: Record<string, unknown>): Promise<void> {
-  await fetch(
+  const res = await fetch(
     `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${TOURS_TABLE_ID}/${recordId}`,
     {
       method: "PATCH",
@@ -93,9 +93,13 @@ async function updateToursRecord(recordId: string, fields: Record<string, unknow
         Authorization: `Bearer ${AIRTABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ fields }),
+      body: JSON.stringify({ fields, typecast: true }),
     }
   );
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    console.error(`RPC webhook: Tours update failed for ${recordId}:`, body);
+  }
 }
 
 // ---------------------------------------------------------------------------
