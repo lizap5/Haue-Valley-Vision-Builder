@@ -21,6 +21,8 @@ export async function POST(req: NextRequest) {
     });
 
     if (!searchRes.ok) {
+      const body = await searchRes.text().catch(() => "");
+      console.error("Vision copy search error:", body);
       return NextResponse.json({ ok: false, error: "Airtable search failed" });
     }
 
@@ -28,6 +30,7 @@ export async function POST(req: NextRequest) {
     const recordId = searchData.records?.[0]?.id;
 
     if (!recordId) {
+      console.error(`Vision copy update: no Tours record found for email ${email}`);
       return NextResponse.json({ ok: false, error: "No record found for email" });
     }
 

@@ -57,25 +57,31 @@ export async function POST(req: NextRequest) {
 
     const state: BuilderState = await req.json();
 
+    // The Tours table has no columns for these four answers. Rather than
+    // dropping what the couple told us, fold them into Additional Notes as a
+    // labeled line so the info still reaches whoever preps the tour.
+    const aisleFlowers = state.aisle_flowers === "unsure" ? "Undecided" : labelFor(AISLE_FLOWERS, state.aisle_flowers);
+    const archSelection = state.arch_selection === "unsure" ? "Undecided" : labelFor(ARCHES, state.arch_selection);
+    const linenColors = (state.linen_colors ?? []).map((v) => labelFor(LINEN_COLORS, v)).join(", ");
+    const accentMetal = labelFor(ACCENT_METALS, state.accent_metal);
+    const decorDetails = [aisleFlowers && `Aisle Flowers: ${aisleFlowers}`, archSelection && `Arch: ${archSelection}`, linenColors && `Linens: ${linenColors}`, accentMetal && `Accent Metal: ${accentMetal}`].filter(Boolean).join(" | ");
+    const combinedNotes = [decorDetails, state.additional_notes?.trim()].filter(Boolean).join("\n\n");
+    
     const fields: Record<string, unknown> = {
       "Couple Names":             state.couple_names ?? "",
       "Email":                    state.email ?? "",
       "Wedding Date":             state.wedding_date ?? "",
       "Photo Style":              PHOTO_STYLE_LABELS[state.photography_style ?? ""] ?? "",
-      "Vibe":                     labelFor(VIBES, state.vibe),
+      "Style Name":                     labelFor(VIBES, state.vibe),
       "Ceremony Location":        state.ceremony_location === "unsure" ? "Undecided" : labelFor(CEREMONY_LOCATIONS, state.ceremony_location),
-      "Aisle Flowers":            state.aisle_flowers === "unsure" ? "Undecided" : labelFor(AISLE_FLOWERS, state.aisle_flowers),
-      "Arch Selection":           state.arch_selection === "unsure" ? "Undecided" : labelFor(ARCHES, state.arch_selection),
-      "Linen Colors":             (state.linen_colors ?? []).map((v) => labelFor(LINEN_COLORS, v)).join(", "),
-      "Accent Metal":             labelFor(ACCENT_METALS, state.accent_metal),
       "Season":                   SEASON_LABELS[state.season ?? ""] ?? "",
-      "Signature Drinks":         drinksAnswer(state),
+      "Favorite Drinks":         drinksAnswer(state),
       "The One Thing":            PRIORITY_LABELS[state.priority ?? ""] ?? "",
       "Guest Count":              GUEST_COUNT_LABELS[state.guest_count ?? 0] ?? "",
       "All-Inclusive Interest":   state.all_inclusive_intent ?? false,
       "Budget Range":             state.budget_range ?? "",
       "How They Heard About Us":  state.heard_about ?? "",
-      "Additional Notes":         state.additional_notes ?? "",
+      "Additional Notes":         combinedNotes,
       "Tour Status":              "Upcoming",
       "Vision Builder Completed": true,
       "Submitted At":             new Date().toISOString().split("T")[0],
