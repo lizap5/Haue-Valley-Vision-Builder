@@ -54,7 +54,13 @@ export async function POST(req: NextRequest) {
     // signature_drink an empty string rather than undefined, so the old
     // fallback quietly generated a cocktail from a nameless drink.
     const teetotal = state.alcohol_opt_out === true;
-    const drink = state.signature_drink?.trim() || "Signature Cocktail";
+    // Whatever they actually named, tiles first and then the box they typed
+    // in. The old fallback of "Signature Cocktail" printed as SIGNATURE
+    // Cocktail under the sign's own Signature label.
+    const drink =
+      state.signature_drink?.trim() ||
+      state.other_drinks?.trim() ||
+      (state.alcohol_opt_out ? "Mocktails" : "Cocktails");
 
     if (!process.env.OPENAI_API_KEY) {
       return NextResponse.json({ ok: false, error: "Missing OpenAI key" });
