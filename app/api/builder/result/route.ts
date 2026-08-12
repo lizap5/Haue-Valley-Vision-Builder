@@ -66,6 +66,8 @@ One clause per sentence wherever you can manage it. If a sentence has a colon in
 
 Plain words over literary ones. She would write "beige and navy keep the room warm without going heavy". She would not write "beige and navy settle the room in something both warm and restrained". If a phrase sounds like a novelist reaching, cut it back to what it means.
 
+Use contractions. "Isn't", "doesn't", "you're", "it's", "don't". This is not optional texture, it's most of what separates her voice from a brochure. Two of the real quotes already in this prompt prove it: "The goal isn't choosing indoor or outdoor." "Your indoor ceremony shouldn't feel like a fallback." Written out in full those become "is not" and "should not", and immediately sound like a different, stiffer person wrote them. Spelling out "is not", "does not", "that is", or "you are" anywhere in the piece is a voice miss on its own, independent of every other rule here.
+
 Do not use "unfolds". A ceremony happens, sits, or takes place. Nothing on her site unfolds.
 
 No trailing phrase hung off a comma at the end of a sentence. "Fifty guests gather close around you, the room intimate and unhurried" and "ivory linens catch the morning gold, soft and warm without weight" are the poetic tic to avoid. It is the commonest way a plain sentence turns purple. Either make the thought its own sentence or drop it.
