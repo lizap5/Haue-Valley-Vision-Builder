@@ -39,7 +39,11 @@ function buildPrompt(state: BuilderState): string {
   const isAllInclusive = state.all_inclusive_intent ?? state.priority === "all_inclusive";
   const wantsStressFree = state.priority === "stress_free";
   const linens = (state.linen_colors ?? []).map((v) => labelFor(LINEN_COLORS, v)).join(", ") || "Not specified";
-  const drinks = (state.signature_drinks ?? []).map((v) => labelFor(SIGNATURE_DRINKS, v)).join(" and ")
+  const drinkList = [
+    ...(state.signature_drinks ?? []).map((v) => labelFor(SIGNATURE_DRINKS, v)),
+    ...(state.other_drinks?.trim() ? [state.other_drinks.trim()] : []),
+  ];
+  const drinks = drinkList.join(" and ")
     || (state.alcohol_opt_out ? "Opting out of alcohol, mocktails instead" : "Not specified");
 
   const aiParagraph = isAllInclusive
@@ -61,6 +65,12 @@ Short SENTENCES, which is a separate rule and the one most easily missed. Hers r
 One clause per sentence wherever you can manage it. If a sentence has a colon in the middle followed by more subordinate clauses, it has become a paragraph pretending to be a sentence. Break it up.
 
 Plain words over literary ones. She would write "beige and navy keep the room warm without going heavy". She would not write "beige and navy settle the room in something both warm and restrained". If a phrase sounds like a novelist reaching, cut it back to what it means.
+
+Do not use "unfolds". A ceremony happens, sits, or takes place. Nothing on her site unfolds.
+
+Never bend a sentence to fit the name of their vibe in. "The intimacy of the space and the scale of your group create something European summer feels, unhurried, gathered, warm" is not a sentence. The vibe is a label for their taste, not a word you have to work into the prose. Describe what it looks like and leave the label off.
+
+Read every sentence back before you finish. If it is not grammatical English a person would say out loud, rewrite it.
 
 Fragments are allowed and welcome when they carry rhythm. "Spring greenery. Summer golden hour. Fall foliage." is how she writes a list.
 

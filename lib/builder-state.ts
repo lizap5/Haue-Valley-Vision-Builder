@@ -26,6 +26,9 @@ export interface BuilderState {
   floral_style?: string;
   colors_chosen?: string[];
   signature_drink?: string;
+  // Typed by the couple when their drink is not one of the eight tiles. The
+  // question is what to have waiting at their tour, so anything goes here.
+  other_drinks?: string;
 }
 
 const STORAGE_KEY = "hv_builder";

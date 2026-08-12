@@ -226,6 +226,10 @@ function linenLabel(state: BuilderState): string | undefined {
 function drinksLabel(state: BuilderState): string | undefined {
   if (state.alcohol_opt_out) return "No alcohol, mocktails";
   const drinks = (state.signature_drinks ?? []).map((v) => labelFor(SIGNATURE_DRINKS, v)).filter(Boolean);
+  // Whatever they typed matters as much as the tiles they tapped: it is the
+  // drink the team will have waiting, and it is often the only answer given.
+  const typed = state.other_drinks?.trim();
+  if (typed) drinks.push(typed);
   return drinks.length ? drinks.join(", ") : undefined;
 }
 

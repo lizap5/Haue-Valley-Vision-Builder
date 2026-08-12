@@ -27,7 +27,7 @@ export default function StepArch() {
           Choose your arch or arbor.
         </h1>
         <p className="font-sans text-hv-sage text-sm sm:text-base leading-relaxed mb-10 max-w-md mx-auto">
-          Also included. Flowers on the wooden options are removable.
+          Also part of the all-inclusive package. Flowers on the wooden options are removable.
         </p>
 
         <div className="mb-6">
