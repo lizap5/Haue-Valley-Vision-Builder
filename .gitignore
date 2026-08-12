@@ -36,3 +36,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# project status doc — delivered to Liz directly, not app code; would go
+# stale in git history and isn't something the app depends on
+PRODUCTION-CHECKLIST.md
