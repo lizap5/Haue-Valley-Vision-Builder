@@ -34,29 +34,39 @@ export default function SeatingChart({ coupleNames, artUrl, bgColor, textColor }
           className="absolute inset-0 w-full h-full object-cover"
         />
       )}
-      <p className="relative font-sans text-[7px] tracking-[0.35em] uppercase opacity-50 mb-2" style={{ color: ink }}>
-        Welcome to our wedding
-      </p>
-      <p
-        className="relative font-script mb-6 leading-tight"
-        style={{ fontSize: "clamp(1.6rem, 9vw, 2.2rem)", color: ink }}
+      {/* Six tables of names reach into the corners where the border is
+          heaviest, and the model places its flowers differently every time,
+          so insetting the text cannot be relied on. This panel sits over the
+          art and under the names: the border reads as a frame around it and
+          every name stays legible whatever the generated art did. */}
+      <div
+        className="relative w-full flex flex-col items-center px-4 py-5"
+        style={{ backgroundColor: `${bgColor ?? "#FFFFFF"}F2` }}
       >
-        {coupleNames}
-      </p>
+        <p className="font-sans text-[7px] tracking-[0.35em] uppercase opacity-50 mb-2" style={{ color: ink }}>
+          Welcome to our wedding
+        </p>
+        <p
+          className="font-script mb-6 leading-tight"
+          style={{ fontSize: "clamp(1.6rem, 9vw, 2.2rem)", color: ink }}
+        >
+          {coupleNames}
+        </p>
 
-      <div className="relative w-full grid grid-cols-2 gap-x-4 gap-y-5 text-left">
-        {TABLES.map((table) => (
-          <div key={table.n}>
-            <p className="font-sans text-[7px] tracking-[0.2em] uppercase text-hv-charcoal font-medium mb-1">
-              Table {table.n}
-            </p>
-            {table.guests.map((g) => (
-              <p key={g} className="font-sans text-[7px] text-hv-charcoal opacity-60 leading-relaxed">
-                {g}
+        <div className="w-full grid grid-cols-2 gap-x-4 gap-y-5 text-left">
+          {TABLES.map((table) => (
+            <div key={table.n}>
+              <p className="font-sans text-[7px] tracking-[0.2em] uppercase font-medium mb-1" style={{ color: ink }}>
+                Table {table.n}
               </p>
-            ))}
-          </div>
-        ))}
+              {table.guests.map((g) => (
+                <p key={g} className="font-sans text-[7px] opacity-60 leading-relaxed" style={{ color: ink }}>
+                  {g}
+                </p>
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
