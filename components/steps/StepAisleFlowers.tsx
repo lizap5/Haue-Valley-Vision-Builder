@@ -27,7 +27,7 @@ export default function StepAisleFlowers() {
           Now choose your aisle flowers.
         </h1>
         <p className="font-sans text-hv-sage text-sm sm:text-base leading-relaxed mb-10 max-w-md mx-auto">
-          Yes, these are included. And you can change your mind later.
+          Included with the all-inclusive package. You can change your mind later.
         </p>
 
         <div className="mb-6">

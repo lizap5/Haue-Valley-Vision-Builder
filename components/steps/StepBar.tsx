@@ -44,7 +44,7 @@ export default function StepBar() {
           Choose your two signature drinks.
         </h1>
         <p className="font-sans text-hv-sage text-sm sm:text-base leading-relaxed mb-3 max-w-lg mx-auto">
-          Beer, wine, seltzers, and Coke products are included in the package. You also get two signature drinks, featured with your names on the bar signage on your wedding day.
+          With the all-inclusive package, beer, wine, seltzers and Coke products are included, along with two signature drinks featured with your names on the bar signage.
         </p>
         <p className="font-sans text-hv-sage text-xs leading-relaxed mb-8 max-w-lg mx-auto">
           Want something not listed here? There are upgrade options, and we can talk through them on your tour. If you would rather not host alcohol, we can make fun mocktails your signature drinks instead.
@@ -68,7 +68,7 @@ export default function StepBar() {
             className="w-4 h-4 accent-hv-green"
           />
           <span className="font-sans text-sm text-hv-charcoal">
-            We want to opt out of alcohol. Bartenders and Coke products still included.
+            We want to opt out of alcohol. Mocktails instead.
           </span>
         </label>
 

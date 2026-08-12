@@ -322,7 +322,9 @@ export async function POST(req: NextRequest) {
     const withUrl = allRecords.filter((r) => getImageUrl(r));
 
     // --- Bar signs: match the couple's chosen drinks against Drinks Tags ---
-    const drinkLabels = (state.signature_drinks ?? []).map((v) => labelFor(SIGNATURE_DRINKS, v));
+    const drinkLabels = state.alcohol_opt_out === true
+      ? []
+      : (state.signature_drinks ?? []).map((v) => labelFor(SIGNATURE_DRINKS, v));
     const barSigns: ScoredPhoto[] = [];
     const usedSigns = new Set<string>();
     for (const drink of drinkLabels) {
@@ -338,10 +340,20 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // A couple who has opted out of alcohol should see no cocktails at all.
+    // isDrinkPhoto only catches a photo naming a specific drink or filed as a
+    // Bar Sign, so a cocktail carrying nothing but the generic "Cocktails" tag
+    // slipped through and appeared on a board that asked for sodas and water.
+    const teetotal = state.alcohol_opt_out === true;
+    const anyDrinkPhoto = (r: AirtableRecord) =>
+      tags(r, "drinks").length > 0 ||
+      tags(r, "space").some((t) => t === BAR_SIGN_SPACE || t === "Bar Area");
+
     // --- Style pool: venue photos only, honoring photo style ---
     const stylePool = withUrl.filter((r) => {
       // Keep cocktail close-ups out of the mood board's venue slots.
       if (isDrinkPhoto(r)) return false;
+      if (teetotal && anyDrinkPhoto(r)) return false;
       // Mood Tags mixes photographic feel (Airy, Moody) with aesthetic mood
       // (Rustic, Romantic, Elegant). Only drop a photo when it is explicitly
       // tagged the opposite feel, so an untagged-for-feel photo stays eligible.
