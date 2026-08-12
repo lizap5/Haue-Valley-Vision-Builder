@@ -293,9 +293,15 @@ async function fetchAllRecords(): Promise<AirtableRecord[]> {
     const url = new URL(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_ID}`);
     if (offset) url.searchParams.set("offset", offset);
 
+    // Next.js's fetch cache has been caught serving a corrupted/truncated
+    // cached body here (JSON.parse throwing "Unexpected end of JSON input"
+    // with zero real outgoing requests to Airtable) -- that is what made the
+    // mood board intermittently show "coming soon" for whole minutes at a
+    // time. This call is fast and not hot enough to need caching, so it's
+    // disabled rather than risk another corrupted-cache episode.
     const res = await fetch(url.toString(), {
       headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}` },
-      next: { revalidate: 300 }, // cache for 5 minutes
+      cache: "no-store",
     });
 
     if (!res.ok) {
