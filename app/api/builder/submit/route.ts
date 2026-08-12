@@ -39,6 +39,16 @@ const GUEST_COUNT_LABELS: Record<number, string> = {
   201: "200+",
 };
 
+// The tiles they tapped plus anything they typed. The typed answer is often
+// the only one given, and it is the drink the team will have waiting.
+function drinksAnswer(state: BuilderState): string {
+  if (state.alcohol_opt_out) return "No alcohol, mocktails";
+  const picked = (state.signature_drinks ?? []).map((v) => labelFor(SIGNATURE_DRINKS, v));
+  const typed = state.other_drinks?.trim();
+  if (typed) picked.push(typed);
+  return picked.join(", ");
+}
+
 export async function POST(req: NextRequest) {
   try {
     if (!AIRTABLE_API_KEY || !AIRTABLE_BASE_ID || !TOURS_TABLE_ID) {
@@ -59,7 +69,7 @@ export async function POST(req: NextRequest) {
       "Linen Colors":             (state.linen_colors ?? []).map((v) => labelFor(LINEN_COLORS, v)).join(", "),
       "Accent Metal":             labelFor(ACCENT_METALS, state.accent_metal),
       "Season":                   SEASON_LABELS[state.season ?? ""] ?? "",
-      "Signature Drinks":         state.alcohol_opt_out ? "No alcohol, mocktails" : (state.signature_drinks ?? []).map((v) => labelFor(SIGNATURE_DRINKS, v)).join(", "),
+      "Signature Drinks":         drinksAnswer(state),
       "The One Thing":            PRIORITY_LABELS[state.priority ?? ""] ?? "",
       "Guest Count":              GUEST_COUNT_LABELS[state.guest_count ?? 0] ?? "",
       "All-Inclusive Interest":   state.all_inclusive_intent ?? false,

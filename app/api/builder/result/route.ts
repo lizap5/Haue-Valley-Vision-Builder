@@ -39,7 +39,11 @@ function buildPrompt(state: BuilderState): string {
   const isAllInclusive = state.all_inclusive_intent ?? state.priority === "all_inclusive";
   const wantsStressFree = state.priority === "stress_free";
   const linens = (state.linen_colors ?? []).map((v) => labelFor(LINEN_COLORS, v)).join(", ") || "Not specified";
-  const drinks = (state.signature_drinks ?? []).map((v) => labelFor(SIGNATURE_DRINKS, v)).join(" and ")
+  const drinkList = [
+    ...(state.signature_drinks ?? []).map((v) => labelFor(SIGNATURE_DRINKS, v)),
+    ...(state.other_drinks?.trim() ? [state.other_drinks.trim()] : []),
+  ];
+  const drinks = drinkList.join(" and ")
     || (state.alcohol_opt_out ? "Opting out of alcohol, mocktails instead" : "Not specified");
 
   const aiParagraph = isAllInclusive
