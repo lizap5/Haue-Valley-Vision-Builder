@@ -142,7 +142,7 @@ async function findToursByName(name: string): Promise<ToursRecord | null> {
 }
 
 async function updateToursRecord(recordId: string, fields: Record<string, unknown>): Promise<void> {
-  await fetch(
+  const res = await fetch(
     `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${TOURS_TABLE_ID}/${recordId}`,
     {
       method: "PATCH",
@@ -150,13 +150,21 @@ async function updateToursRecord(recordId: string, fields: Record<string, unknow
         Authorization: `Bearer ${AIRTABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ fields }),
+      // typecast lets Airtable accept a select value (e.g. "Tour Status":
+      // "Toured") even if it doesn't exactly match an existing option,
+      // instead of rejecting the whole PATCH — including the tour notes,
+      // sentiment, etc. that came with it — over one mismatched field.
+      body: JSON.stringify({ fields, typecast: true }),
     }
   );
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    console.error(`Otter webhook: Tours update failed for ${recordId}:`, body);
+  }
 }
 
 async function createEmailDraft(fields: Record<string, unknown>): Promise<void> {
-  await fetch(
+  const res = await fetch(
     `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${EMAIL_DRAFTS_TABLE_ID}`,
     {
       method: "POST",
@@ -164,9 +172,13 @@ async function createEmailDraft(fields: Record<string, unknown>): Promise<void> 
         Authorization: `Bearer ${AIRTABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ fields }),
+      body: JSON.stringify({ fields, typecast: true }),
     }
   );
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    console.error("Otter webhook: email draft create failed:", body);
+  }
 }
 
 // ---------------------------------------------------------------------------
