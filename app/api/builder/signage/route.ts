@@ -42,7 +42,12 @@ async function generate(
 export async function POST(req: NextRequest) {
   try {
     const state: BuilderState = await req.json();
-    const drink = state.signature_drink ?? "Signature Cocktail";
+    // A couple who asked for no alcohol gets no cocktail, generated or
+    // otherwise. Note ?? would not have caught this: opting out leaves
+    // signature_drink an empty string rather than undefined, so the old
+    // fallback quietly generated a cocktail from a nameless drink.
+    const teetotal = state.alcohol_opt_out === true;
+    const drink = state.signature_drink?.trim() || "Signature Cocktail";
 
     if (!process.env.OPENAI_API_KEY) {
       return NextResponse.json({ ok: false, error: "Missing OpenAI key" });
@@ -55,7 +60,7 @@ export async function POST(req: NextRequest) {
     // enough concurrency to get the later two throttled, which is why the
     // signs came back bare while the drink arrived fine.
     const [drinkImageUrl, artUrl] = await Promise.all([
-      generate(openai, buildDrinkPrompt(drink)),
+      teetotal ? Promise.resolve(null) : generate(openai, buildDrinkPrompt(drink)),
       generate(openai, signageArtPrompt(state)),
     ]);
 
