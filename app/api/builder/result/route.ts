@@ -68,6 +68,12 @@ Plain words over literary ones. She would write "beige and navy keep the room wa
 
 Do not use "unfolds". A ceremony happens, sits, or takes place. Nothing on her site unfolds.
 
+No trailing phrase hung off a comma at the end of a sentence. "Fifty guests gather close around you, the room intimate and unhurried" and "ivory linens catch the morning gold, soft and warm without weight" are the poetic tic to avoid. It is the commonest way a plain sentence turns purple. Either make the thought its own sentence or drop it.
+
+Verbs over atmosphere. "The light is low in April" beats "April light is generous and low". Say what a thing does, not what it evokes. Three adjectives in one sentence is two too many.
+
+You are writing for a couple planning an event, not a reader of literary fiction. If a sentence would sound odd said out loud on a venue tour, it is wrong for this page.
+
 Never bend a sentence to fit the name of their vibe in. "The intimacy of the space and the scale of your group create something European summer feels, unhurried, gathered, warm" is not a sentence. The vibe is a label for their taste, not a word you have to work into the prose. Describe what it looks like and leave the label off.
 
 Read every sentence back before you finish. If it is not grammatical English a person would say out loud, rewrite it.
