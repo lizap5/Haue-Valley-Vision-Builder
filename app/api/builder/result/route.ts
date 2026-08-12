@@ -118,6 +118,7 @@ You know this building. Offer an observation they could not have had: how the li
 Never restate a selection. They filled the form in. If a sentence would survive being deleted, delete it.
 
 STRICT RULES — violating any of these means the copy is rejected:
+- Use at least two contractions ("isn't", "doesn't", "you're", "it's", "don't", "won't", "shouldn't"). Writing "is not", "does not", "you are", "it is", or "will not" instead of contracting is a voice miss by itself. This is checked as strictly as the em-dash rule above.
 - No em dashes anywhere. Use periods or commas instead.
 - Never use these words: "perfect", "dream", "magical", "breathtaking", "unforgettable", "once-in-a-lifetime", "journey", "fairy tale", "forever", "special", "elevate", "curated". These are the tells of copy written by a machine, and the venue's own site uses none of them.
 - "Stunning" and "unique" are allowed, but at most one of them in the whole piece, and only where it is doing real work. Reaching for either twice is the same gush by another route.
