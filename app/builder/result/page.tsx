@@ -242,6 +242,19 @@ export default function ResultPage() {
   const [signageLoading, setSignageLoading] = useState(true);
   const [localState, setLocalState] = useState<BuilderState>({});
   const [error, setError] = useState(false);
+  const [emailStatus, setEmailStatus] = useState<"sending" | "sent" | "failed">("sending");
+
+  function sendVisionEmail(s: BuilderState, visionData: ResultContent) {
+    setEmailStatus("sending");
+    fetch("/api/builder/email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ state: s, content: visionData }),
+    })
+      .then((r) => r.json())
+      .then((data) => setEmailStatus(data?.coupleEmailSent ? "sent" : "failed"))
+      .catch(() => setEmailStatus("failed"));
+  }
 
   useEffect(() => {
     const s: BuilderState = getBuilderState();
@@ -276,12 +289,9 @@ export default function ResultPage() {
           stylePhotos: photoResp.stylePhotos ?? [],
           barSigns: photoResp.barSigns ?? [],
         });
-        // Fire-and-forget: send vision email once content is ready
-        fetch("/api/builder/email", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ state: s, content: visionData }),
-        }).catch(() => {});
+        // Send vision email once content is ready, tracking status so the
+        // couple can see whether it actually went out.
+        if (s.email) sendVisionEmail(s, visionData);
         // Fire-and-forget: save vision copy + style name to Airtable
         if (s.email) {
           fetch("/api/builder/update-vision", {
@@ -356,9 +366,39 @@ export default function ResultPage() {
 
           {/* Confirmation line */}
           {localState.email && (
-            <p className="font-sans text-hv-sage text-sm text-center mb-12 max-w-md mx-auto leading-relaxed">
-              We have sent your board to {localState.email}. We would love to show you the real thing.
-            </p>
+            <div className="text-center mb-12">
+              {emailStatus === "sent" && (
+                <>
+                  <p className="font-sans text-hv-sage text-sm max-w-md mx-auto leading-relaxed">
+                    We have sent your board to {localState.email}. We would love to show you the real thing.
+                  </p>
+                  <button
+                    onClick={() => content && sendVisionEmail(localState, content)}
+                    className="font-sans text-[10px] tracking-[0.15em] uppercase text-hv-sage underline underline-offset-4 hover:text-hv-green transition-colors duration-200 mt-2"
+                  >
+                    Wrong email? Send again
+                  </button>
+                </>
+              )}
+              {emailStatus === "sending" && (
+                <p className="font-sans text-hv-sage text-sm max-w-md mx-auto leading-relaxed">
+                  Sending your board to {localState.email}&hellip;
+                </p>
+              )}
+              {emailStatus === "failed" && (
+                <>
+                  <p className="font-sans text-hv-sage text-sm max-w-md mx-auto leading-relaxed mb-2">
+                    We could not send your board to {localState.email}.
+                  </p>
+                  <button
+                    onClick={() => content && sendVisionEmail(localState, content)}
+                    className="font-sans text-[11px] tracking-[0.2em] uppercase text-hv-green underline underline-offset-4 hover:text-hv-charcoal transition-colors duration-200"
+                  >
+                    Try sending again
+                  </button>
+                </>
+              )}
+            </div>
           )}
           {!localState.email && <div className="mb-12" />}
 
