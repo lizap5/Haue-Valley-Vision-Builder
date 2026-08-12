@@ -1,50 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
 import { BuilderState } from "@/lib/builder-state";
+import { VIBES, CEREMONY_LOCATIONS, SIGNATURE_DRINKS } from "@/lib/calculator-options";
 
 const AIRTABLE_API_KEY = process.env.AIRTABLE_API_KEY!;
 const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID!;
 const TOURS_TABLE_ID   = process.env.AIRTABLE_TOURS_TABLE_ID!;
 
-// Reverse maps — Airtable label → builder state key
-const ROOM_FEELING_REVERSE: Record<string, string> = {
-  "Swept away / Romantic":  "romantic",
-  "Elevated / Elegant":     "elegant",
-  "Right at home / Rustic": "rustic",
-  "Amazed / Dramatic":      "dramatic",
-  "Enchanted / Garden":     "garden",
-};
+// Generic "label as stored in Airtable" -> "builder value" reverse lookup,
+// built straight from the same option lists the builder and photo scorer
+// use. Keeping this generic (instead of a hand-typed map that can drift)
+// means it can never fall out of sync with what /api/builder/submit writes.
+function reverseByLabel(list: { value: string; label: string }[]): Record<string, string> {
+  return Object.fromEntries(list.map((o) => [o.label, o.value]));
+}
 
-const FLORAL_STYLE_REVERSE: Record<string, string> = {
-  "Full and lush — roses, peonies, and romantic blooms":          "roses",
-  "Fresh and organic — lush greenery, ferns, and natural textures": "greenery",
-  "Clean and ethereal — white blooms, ivory, and soft neutrals":  "white_blooms",
-  "Garden and abundant — hydrangea, wildflowers, and loose arrangements": "hydrangea",
-};
+const VIBE_REVERSE      = reverseByLabel(VIBES);
+const CEREMONY_REVERSE  = reverseByLabel(CEREMONY_LOCATIONS);
+const DRINK_REVERSE     = reverseByLabel(SIGNATURE_DRINKS);
 
 const SEASON_REVERSE: Record<string, string> = {
-  "Spring": "spring",
-  "Summer": "summer",
-  "Fall":   "fall",
-  "Winter": "winter",
-};
-
-const CEREMONY_REVERSE: Record<string, string> = {
-  "The Stone Wall":          "stone_wall",
-  "The Forest View":         "forest_view",
-  "Indoor by the Fireplace": "indoor_fireplace",
-  "Undecided":               "unsure",
+  Spring: "spring",
+  Summer: "summer",
+  Fall:   "fall",
+  Winter: "winter",
 };
 
 const PHOTO_STYLE_REVERSE: Record<string, string> = {
   "Light and Airy": "airy",
   "Dark and Moody":  "moody",
-};
-
-const FLORAL_COLORS: Record<string, { bg: string; text: string; accent: string }> = {
-  roses:        { bg: "#EDD5CC", text: "#5C2D3A", accent: "#C4857A" },
-  greenery:     { bg: "#D4E2D4", text: "#2A3E2A", accent: "#6B8F6B" },
-  white_blooms: { bg: "#F2EDE4", text: "#3D3228", accent: "#B8A89A" },
-  hydrangea:    { bg: "#D8E0EC", text: "#2A3550", accent: "#7B92B8" },
 };
 
 export interface DisplayData {
@@ -56,6 +39,13 @@ export interface DisplayData {
   colors: { bg: string; text: string; accent: string };
   photos: Array<{ url: string }>;
 }
+
+// A single neutral, on-brand scheme. The old per-couple scheme was derived
+// from a "Floral Style" field the current builder never writes (it was
+// replaced by "vibe" during the rework), so there's no reliable per-couple
+// signal left in Airtable to drive this — better to show one scheme that
+// always looks intentional than to guess wrong for every couple.
+const DEFAULT_COLORS = { bg: "#F2EDE4", text: "#3D3228", accent: "#B8A89A" };
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -95,14 +85,24 @@ export async function GET(req: NextRequest) {
 
     const f = record.fields;
 
-    // Reconstruct builder state for photo scoring
+    // Reconstruct builder state for photo scoring from the fields the
+    // CURRENT /api/builder/submit route actually writes. Note: aisle
+    // flowers, arch selection, linen colors, and accent metal are only
+    // folded into the free-text "Additional Notes" field today, not stored
+    // as their own columns, so they can't be reconstructed here — the
+    // scorer still works well off vibe, ceremony, season, photo style, and
+    // drinks alone.
+    const favoriteDrinkLabels = ((f["Favorite Drinks"] as string) ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+
     const state: BuilderState = {
-      room_feeling:      ROOM_FEELING_REVERSE[f["Room Feeling"] as string]       as BuilderState["room_feeling"],
-      floral_style:      FLORAL_STYLE_REVERSE[f["Floral Style"] as string],
-      colors_chosen:     ((f["Colors Chosen"] as string) ?? "").split(", ").filter(Boolean),
-      season:            SEASON_REVERSE[f["Season"] as string],
-      ceremony_location: CEREMONY_REVERSE[f["Ceremony Location"] as string],
-      photography_style: PHOTO_STYLE_REVERSE[f["Photo Style"] as string]         as BuilderState["photography_style"],
+      vibe:               VIBE_REVERSE[f["Style Name"] as string],
+      ceremony_location:  CEREMONY_REVERSE[f["Ceremony Location"] as string],
+      season:             SEASON_REVERSE[f["Season"] as string],
+      photography_style:  PHOTO_STYLE_REVERSE[f["Photo Style"] as string] as BuilderState["photography_style"],
+      signature_drinks:   favoriteDrinkLabels.map((label) => DRINK_REVERSE[label]).filter(Boolean),
     };
 
     // Fetch scored photos using internal photos API
@@ -118,16 +118,13 @@ export async function GET(req: NextRequest) {
     const photosData = photosRes.ok ? await photosRes.json() : { photos: [] };
     const topPhotos  = (photosData.photos ?? []).slice(0, 2);
 
-    const floralKey = FLORAL_STYLE_REVERSE[f["Floral Style"] as string] ?? "white_blooms";
-    const colors    = FLORAL_COLORS[floralKey] ?? FLORAL_COLORS.white_blooms;
-
     const displayData: DisplayData = {
       coupleNames:    (f["Couple Names"] as string) ?? "",
       weddingDate:    (f["Wedding Date"] as string) ?? "",
       visionCopy:     (f["Vision Copy"]  as string) ?? "",
       styleName:      (f["Style Name"]   as string) ?? "",
-      signatureDrink: (f["Signature Drink"] as string) ?? "",
-      colors,
+      signatureDrink: favoriteDrinkLabels.join(" & "),
+      colors:         DEFAULT_COLORS,
       photos: topPhotos.map((p: { url: string }) => ({ url: p.url })),
     };
 

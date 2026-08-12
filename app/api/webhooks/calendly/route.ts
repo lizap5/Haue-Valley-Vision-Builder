@@ -33,7 +33,7 @@ async function findRecordByEmail(email: string): Promise<string | null> {
 }
 
 async function updateAirtableRecord(recordId: string, tourDate: string, isoDateTime: string): Promise<void> {
-  await fetch(
+  const res = await fetch(
     `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${TOURS_TABLE_ID}/${recordId}`,
     {
       method: "PATCH",
@@ -47,9 +47,17 @@ async function updateAirtableRecord(recordId: string, tourDate: string, isoDateT
           "Tour ISO DateTime": isoDateTime,
           "Tour Status":       "Scheduled",
         },
+        // typecast: don't reject the whole update (including the tour
+        // date/time) if "Scheduled" doesn't exactly match an existing
+        // Tour Status option.
+        typecast: true,
       }),
     }
   );
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    console.error(`Calendly webhook: Tours update failed for ${recordId}:`, body);
+  }
 }
 
 export async function POST(req: NextRequest) {
