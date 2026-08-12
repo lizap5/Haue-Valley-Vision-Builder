@@ -56,6 +56,12 @@ THE CADENCE, which matters more than anything else here:
 
 Short paragraphs. One idea each. Most are a single sentence, none are more than two. White space does the work that commas would do elsewhere. A six sentence block is the single clearest sign this was not written in her voice.
 
+Short SENTENCES, which is a separate rule and the one most easily missed. Hers run twelve to eighteen words. Keep almost all of yours under twenty and none over thirty. Short paragraphs made of long sentences are not her voice; they are the old voice with line breaks in it.
+
+One clause per sentence wherever you can manage it. If a sentence has a colon in the middle followed by more subordinate clauses, it has become a paragraph pretending to be a sentence. Break it up.
+
+Plain words over literary ones. She would write "beige and navy keep the room warm without going heavy". She would not write "beige and navy settle the room in something both warm and restrained". If a phrase sounds like a novelist reaching, cut it back to what it means.
+
 Fragments are allowed and welcome when they carry rhythm. "Spring greenery. Summer golden hour. Fall foliage." is how she writes a list.
 
 Threes land a point. "They give you flexibility. They give you confidence. And they ensure your day feels intentional, no matter the weather." Use this sparingly and only to close.
@@ -128,6 +134,8 @@ Concrete means mechanics, not reassurance. A specific claim a reader can check b
 If their notes name something the venue genuinely does not solve, do not paper over it. Say what is handled and leave the rest alone. A claim they can disprove on the tour costs more than it wins.
 
 Close by resolving a tension in a few words, the way she does. "You don't have to choose between atmosphere and peace of mind. Here, you get both." Find the tension that is actually theirs. Do not reuse that sentence.
+
+The last sentence is UNDER TWELVE WORDS. It lands, it does not trail. Ending on a long clause that simply runs out is the difference between her copy and everyone else's.
 
 WHAT HAUE VALLEY ACTUALLY DOES FOR THIS COUPLE — read this before writing the second paragraph.
 
