@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import WelcomeSign from "@/components/signage/WelcomeSign";
 import SeatingChart from "@/components/signage/SeatingChart";
 
@@ -107,9 +107,10 @@ function SlideSeating({ data }: { data: DisplayData }) {
 // ---------------------------------------------------------------------------
 
 function DisplayPageInner() {
-  const searchParams = useSearchParams();
-  const coupleParam  = searchParams.get("couple");
-  const dateParam    = searchParams.get("date");
+  const router        = useRouter();
+  const searchParams  = useSearchParams();
+  const coupleParam   = searchParams.get("couple");
+  const dateParam     = searchParams.get("date");
 
   const [data, setData]               = useState<DisplayData | null>(null);
   const [error, setError]             = useState<string | null>(null);
@@ -132,12 +133,36 @@ function DisplayPageInner() {
     setError(null);
   }, [coupleParam, dateParam]);
 
-  // Fetch on load and refresh every 60s
+  // The activation window that put us here (see /api/display/status) is the
+  // same source of truth for "is this couple's tour still current." Once it
+  // says no — window elapsed, or the tour got marked Toured — send the
+  // screen back to standby so it doesn't sit on one couple's slides forever
+  // and is ready to auto-populate the next couple's tour on its own.
+  const checkStillActive = useCallback(async () => {
+    try {
+      const res = await fetch("/api/display/status", { cache: "no-store" });
+      if (!res.ok) return;
+      const status = await res.json();
+      const stillCurrent =
+        status.active && (!coupleParam || status.coupleNames === coupleParam);
+      if (!stillCurrent) {
+        router.push("/display/standby");
+      }
+    } catch {
+      // silent — keep showing the current slide rather than risk a blank screen
+    }
+  }, [coupleParam, router]);
+
+  // Fetch on load and refresh every 60s; same cadence, re-check activation each time
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, REFRESH_INTERVAL);
+    checkStillActive();
+    const interval = setInterval(() => {
+      fetchData();
+      checkStillActive();
+    }, REFRESH_INTERVAL);
     return () => clearInterval(interval);
-  }, [fetchData]);
+  }, [fetchData, checkStillActive]);
 
   // Build slide list dynamically based on available data
   const slides = data
