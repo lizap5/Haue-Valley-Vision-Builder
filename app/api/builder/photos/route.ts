@@ -443,6 +443,13 @@ export async function POST(req: NextRequest) {
     // --- Guaranteed space slots: best-scoring photo for each required space ---
     const chosenCeremonyTag = CEREMONY_LOCATION_TAG_MAP[state.ceremony_location ?? ""];
     const spacePhotos: ScoredPhoto[] = [];
+    // What the board already shows, recorded from the photo each slot actually
+    // chose rather than from the tags its slot would have accepted. The
+    // distinction matters: the Ceremony slot accepts "Fireplace Indoor", which
+    // around fifty photos carry and most of them are receptions, so treating
+    // the whole accepts list as covered blacklists a large part of the library
+    // the moment that slot fills.
+    const coveredSpaces = new Set<string>();
     for (const { slot, accepts, prefersNot } of SPACE_SLOTS) {
       const inSpace = (s: { record: AirtableRecord }) =>
         isFresh(s.record) && tags(s.record, "space").some((t) => accepts.includes(t));
@@ -487,6 +494,7 @@ export async function POST(req: NextRequest) {
 
       if (hit) {
         claim(hit.record);
+        for (const t of tags(hit.record, "space")) coveredSpaces.add(t);
         spacePhotos.push({
           id: hit.record.id,
           url: getImageUrl(hit.record)!,
@@ -509,25 +517,18 @@ export async function POST(req: NextRequest) {
       const recordVibes = tags(r, "vibe");
       return recordVibes.length === 0 || recordVibes.includes(chosenVibeTag);
     };
-    const candidates = scored.filter((s) => isFresh(s.record) && rightVibe(s.record));
-
-    // The spaces the slots above already put on the board. A style pick showing
-    // one of them again reads as a duplicate even when it is a genuinely
-    // different photograph: two shots of the same aisle, one in the Ceremony
-    // slot and one again below it, is what a couple sees as the same picture
-    // twice. Only slots that actually filled contribute, so an empty slot does
-    // not bar its own space from the picks.
-    const coveredSpaces = new Set<string>(
-      SPACE_SLOTS
-        .filter(({ slot }) => spacePhotos.some((p) => p.space === slot))
-        .flatMap(({ accepts }) => accepts)
-    );
-    // A photo counts as somewhere new only if none of its space tags are
-    // already covered: a reception detail shot is still the reception. Photos
-    // with no space recorded are unaffected, since no space is not a repeat.
+    // A style pick showing a space the board already has reads as a duplicate
+    // even when it is a genuinely different photograph: two shots of the same
+    // aisle, one in the Ceremony slot and one again below it, is what a couple
+    // sees as the same picture twice. A photo counts as somewhere new only if
+    // none of its space tags are covered -- a reception detail shot is still
+    // the reception. Photos with no space recorded are unaffected, since no
+    // space is not a repeat.
     const showsNewSpace = (r: AirtableRecord) =>
       !tags(r, "space").some((t) => coveredSpaces.has(t));
-    const elsewhere = candidates.filter((s) => showsNewSpace(s.record));
+    const eligible = scored.filter(
+      (s) => isFresh(s.record) && rightVibe(s.record) && showsNewSpace(s.record)
+    );
 
     const stylePicks: ScoredPhoto[] = [];
     // Each pick claims, so the key-based duplicate check applies between the
@@ -551,20 +552,19 @@ export async function POST(req: NextRequest) {
     };
 
     // Fixed positions in the ranking, so the three picks span the score range
-    // instead of clustering at the top.
+    // instead of clustering at the top, then fill from the top with whatever
+    // those positions missed.
     for (const i of [0, 3, 7]) {
-      if (stylePicks.length < 3) pickFrom(elsewhere, i);
+      if (stylePicks.length < 3) pickFrom(eligible, i);
     }
-    // Then anything else showing a new space, and only then photos of a space
-    // already on the board. A strong photo of the ceremony is passed over for a
-    // weaker one of somewhere else, but the board is never left short: with a
-    // small library every remaining candidate may repeat a covered space.
-    for (let i = 0; stylePicks.length < 3 && i < elsewhere.length; i++) {
-      pickFrom(elsewhere, i);
+    for (let i = 0; stylePicks.length < 3 && i < eligible.length; i++) {
+      pickFrom(eligible, i);
     }
-    for (let i = 0; stylePicks.length < 3 && i < candidates.length; i++) {
-      pickFrom(candidates, i);
-    }
+    // Deliberately no wider fallback. When the library cannot offer three
+    // photos of somewhere the board does not already show, it returns two, or
+    // one: the page lays out whatever it is given. A shorter board reads as a
+    // deliberate edit, while the same aisle printed twice reads as broken, and
+    // padding the count was what put it there in the first place.
 
     return NextResponse.json({
       // Legacy key: first three images for anything still reading `photos`

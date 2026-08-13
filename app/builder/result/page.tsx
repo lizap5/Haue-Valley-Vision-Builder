@@ -405,7 +405,18 @@ export default function ResultPage() {
           {/* Mood board */}
           <MoodBoard
             spacePhotos={photoData.spacePhotos}
-            stylePhotos={photoData.stylePhotos.length ? photoData.stylePhotos : photoData.photos}
+            // The legacy `photos` key is the space photos followed by the style
+            // picks, so falling back to it whole reprints every space photo the
+            // board is already showing. That fallback is only for a response
+            // with no stylePhotos at all; an empty list is now a real answer,
+            // meaning the library had nothing left that isn't already up there.
+            stylePhotos={
+              photoData.stylePhotos.length
+                ? photoData.stylePhotos
+                : photoData.photos.filter(
+                    (p) => !photoData.spacePhotos.some((s) => s.id === p.id)
+                  )
+            }
             linenColors={localState.linen_colors ?? []}
             accentMetal={localState.accent_metal}
           />
