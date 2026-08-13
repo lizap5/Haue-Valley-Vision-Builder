@@ -36,6 +36,7 @@ export interface DisplayData {
   visionCopy: string;
   styleName: string;
   signatureDrink: string;
+  ceremonyLocation: string;
   colors: { bg: string; text: string; accent: string };
   photos: Array<{ url: string }>;
 }
@@ -124,6 +125,7 @@ export async function GET(req: NextRequest) {
       visionCopy:     (f["Vision Copy"]  as string) ?? "",
       styleName:      (f["Style Name"]   as string) ?? "",
       signatureDrink: favoriteDrinkLabels.join(" & "),
+      ceremonyLocation: (f["Ceremony Location"] as string) ?? "",
       colors:         DEFAULT_COLORS,
       photos: topPhotos.map((p: { url: string }) => ({ url: p.url })),
     };

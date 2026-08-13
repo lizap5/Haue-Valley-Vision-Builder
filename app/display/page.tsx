@@ -13,9 +13,17 @@ interface DisplayData {
   visionCopy: string;
   styleName: string;
   signatureDrink: string;
+  ceremonyLocation: string;
   colors: { bg: string; text: string; accent: string };
   photos: Array<{ url: string }>;
 }
+
+// The only ceremony spots that are actually outdoors — "The Fireplace" is
+// already the indoor option, so a couple who picked it has no need to see
+// a rain plan for itself. Labels here must match CEREMONY_LOCATIONS in
+// lib/calculator-options.ts, since that's what Airtable's "Ceremony
+// Location" field stores.
+const OUTDOOR_CEREMONY_LOCATIONS = ["The Stone Wall", "The Forest View"];
 
 const SLIDE_DURATION = 9000; // ms per slide
 const REFRESH_INTERVAL = 60000; // re-fetch data every 60s
@@ -82,6 +90,46 @@ function SlideVision({ data }: { data: DisplayData }) {
             {p}
           </p>
         ))}
+        <div className="mt-6">
+          <p className="font-sans text-[9px] tracking-[0.3em] uppercase text-hv-sage opacity-50">
+            Haue Valley Weddings · Pacific, MO
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SlideRainBackup({ data }: { data: DisplayData }) {
+  return (
+    <div className="w-full h-full flex" style={{ backgroundColor: "#FAF8F5" }}>
+      {/* Photo column — the indoor fireplace is a fixed venue space, not a
+          couple photo, so it's served straight from /public rather than
+          proxied through Airtable attachment URLs like the vision slide. */}
+      <div className="w-1/2 h-full overflow-hidden">
+        <img
+          src="/images/ceremony/the-indoor-fireplace.jpg"
+          alt=""
+          className="w-full h-full object-cover"
+        />
+      </div>
+
+      {/* Text column */}
+      <div className="w-1/2 h-full flex flex-col justify-center px-14 py-12">
+        <p className="font-sans text-[11px] tracking-[0.35em] uppercase text-hv-sage mb-4">
+          Rain Plan
+        </p>
+        <h2 className="font-serif font-light text-3xl text-hv-charcoal leading-snug mb-8">
+          Every Wedding Has a Backup
+        </h2>
+        <div className="w-10 h-px bg-hv-linen mb-8" />
+        <p className="font-sans text-hv-charcoal text-base leading-relaxed mb-5">
+          If the forecast turns, {data.coupleNames ? `${data.coupleNames}’s` : "your"} ceremony
+          simply moves inside to The Fireplace — sheltered, warm, and just as beautiful, any weather.
+        </p>
+        <p className="font-sans text-hv-charcoal text-base leading-relaxed mb-5">
+          Same officiant, same seats, same vows. The only thing that changes is the view.
+        </p>
         <div className="mt-6">
           <p className="font-sans text-[9px] tracking-[0.3em] uppercase text-hv-sage opacity-50">
             Haue Valley Weddings · Pacific, MO
@@ -165,13 +213,38 @@ function DisplayPageInner() {
   }, [fetchData, checkStillActive]);
 
   // Build slide list dynamically based on available data
-  const slides = data
+  const baseSlides = data
     ? [
         { key: "welcome", component: <SlideWelcome data={data} /> },
         ...(data.visionCopy ? [{ key: "vision", component: <SlideVision data={data} /> }] : []),
         { key: "seating",  component: <SlideSeating data={data} /> },
       ]
     : [];
+
+  const showRainBackup = !!data && OUTDOOR_CEREMONY_LOCATIONS.includes(data.ceremonyLocation);
+
+  // Rather than tack the rain-backup slide on once, weave it through the
+  // rotation. A tour guide standing in front of the screen with a couple
+  // asking "what happens if it rains" shouldn't have to wait out a whole
+  // cycle of unrelated slides to reach the one that answers it.
+  //
+  // One rain slide per two other slides puts it on screen ~33% of the time
+  // and back around every ~27s. The rotation is doubled first so an odd
+  // number of base slides still divides evenly — with 3 base slides a single
+  // pass would land the rain slide in the same spot every cycle and drop it
+  // to 25%. Doubling shifts the insertion point on the second pass instead.
+  const slides = showRainBackup
+    ? [...baseSlides, ...baseSlides].flatMap((slide, i) => {
+        // Re-key so the doubled pass doesn't repeat React keys.
+        const keyed = { ...slide, key: `${slide.key}-${i}` };
+        return i % 2 === 1
+          ? [
+              keyed,
+              { key: `rain-backup-${i}`, component: <SlideRainBackup data={data as DisplayData} /> },
+            ]
+          : [keyed];
+      })
+    : baseSlides;
 
   // Auto-advance slides
   useEffect(() => {
