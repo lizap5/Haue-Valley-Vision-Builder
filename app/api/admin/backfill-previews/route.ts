@@ -3,6 +3,7 @@ import {
   fetchAllRecords, driveToDirectUrl, servesAnImage, patchRecords,
   isAdminAuthorized, unauthorizedReason,
 } from "@/lib/image-tagging";
+import { importNewDriveFiles, driveImportConfigured, ImportResult } from "@/lib/drive-import";
 
 export const maxDuration = 60;
 
@@ -23,6 +24,22 @@ export async function GET(req: NextRequest) {
   const limit = Math.min(Number(url.searchParams.get("limit") ?? 30), 50);
 
   try {
+    // Import first, so a photo added to Drive this week gets its row and its
+    // preview in the same run rather than waiting for the next one. Deliberately
+    // fail-soft: this route worked for months without the import, and a Drive
+    // outage, an expired key or an unset variable must not take down the
+    // backfill that the tagger depends on. Whatever happened is reported in the
+    // response either way rather than being swallowed.
+    let importResult: ImportResult | { ok: false; error: string } | null = null;
+    if (driveImportConfigured()) {
+      try {
+        importResult = await importNewDriveFiles({ limit, dry });
+      } catch (err) {
+        console.error("backfill-previews: Drive import step failed:", err);
+        importResult = { ok: false, error: String(err) };
+      }
+    }
+
     const records = await fetchAllRecords();
     const missing = records.filter((r) => {
       const att = r.fields["Image Preview"] as unknown[] | undefined;
@@ -34,6 +51,7 @@ export async function GET(req: NextRequest) {
         ok: true,
         message: "Every record already has an Image Preview. Nothing to do.",
         total: records.length,
+        driveImport: importResult,
       });
     }
 
@@ -65,6 +83,7 @@ export async function GET(req: NextRequest) {
         estimatedRuns: runs,
         sampleReachable: `${reachable} of ${sample.length}`,
         message: `${missing.length} records need an Image Preview. Each call fills up to ${limit}, so expect about ${runs} run${runs === 1 ? "" : "s"}. Remove dry=1 to start; each response reports how many remain.`,
+        driveImport: importResult,
       });
     }
 
@@ -84,6 +103,7 @@ export async function GET(req: NextRequest) {
       failed: result.failed,
       remaining,
       errors: result.errors.slice(0, 3),
+      driveImport: importResult,
       message: remaining > 0
         ? `Filled ${result.ok}. ${remaining} still to go, run this again to continue.`
         : `Filled ${result.ok}. All done. Airtable downloads each file in the background, so previews may take a minute to appear.`,

@@ -153,6 +153,34 @@ export async function fetchAllRecords(): Promise<AirtableRecord[]> {
   return records;
 }
 
+// Airtable accepts up to 10 records per POST, same as PATCH. No typecast here:
+// these rows carry only a name and a Drive link, both plain text, so there is
+// no select option for Airtable to invent. The tag columns are left empty on
+// purpose, which is exactly what marks the row as work for the tagger.
+export async function createRecords(
+  rows: { fields: Record<string, unknown> }[]
+): Promise<{ ok: number; failed: number; errors: string[] }> {
+  let ok = 0, failed = 0;
+  const errors: string[] = [];
+
+  for (let i = 0; i < rows.length; i += 10) {
+    const batch = rows.slice(i, i + 10);
+    const res = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_ID}`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ records: batch }),
+    });
+    if (res.ok) {
+      ok += batch.length;
+    } else {
+      failed += batch.length;
+      errors.push(`${res.status}: ${(await res.text()).slice(0, 300)}`);
+    }
+  }
+
+  return { ok, failed, errors };
+}
+
 // Airtable accepts up to 10 records per PATCH.
 export async function patchRecords(
   updates: { id: string; fields: Record<string, unknown> }[]

@@ -49,6 +49,13 @@ many records remain; keep reloading until `remaining` is 0.
   everything. Up to 6 per call (`limit`, max 12) — each image costs a download
   plus a vision call, and the loop stops at 45s and saves what it finished
   rather than risk a timeout discarding the batch.
+- `import-drive` — creates an Airtable row for every image in the watched
+  Drive folder that does not have one yet, keyed on the Drive file id so a
+  re-run cannot duplicate. Up to 25 rows per call (`limit`, max 50). **Runs
+  automatically as the first step of `backfill-previews`**, so no third cron
+  job is needed — Hobby allows only two and both are spoken for. That step is
+  fail-soft: if Drive is unreachable or the key is unset, the backfill still
+  runs, and the outcome appears under `driveImport` in the response.
 - `audit-library` — read-only inventory. Writes nothing.
 
 Both accept `dry=1` to report without writing.
@@ -119,17 +126,33 @@ Both routes only ever fill blanks, so a duplicated or missed run is harmless:
 
 A missed run simply means the work waits until the following Monday.
 
-### What is still manual
+### Drive ingestion
 
-Nothing creates Airtable rows from Google Drive files. A new photo dropped in
-Drive is invisible to all of this until a row exists with a `Google Drive Link`.
-Wire that up with Zapier ("New File in Folder" → "Create Record"), or add rows
-by hand.
+`import-drive` closes what used to be the manual gap: a photo dropped in the
+watched folder now becomes an Airtable row, a preview and a set of tags without
+anyone opening Airtable.
 
-Google Drive's **"New File in Folder" trigger is unreliable with subfolders and
-with files moved in from elsewhere**. Every image must be uploaded **directly
-into one flat folder** — no subfolders, no dragging in from another Drive
-location — or the Zap silently misses them.
+It lists the folder's **current contents** every run and creates whatever is
+missing, rather than reacting to an upload event. That matters, because the
+Zapier "New File in Folder" trigger this replaces silently misses files that
+were *moved* into the folder rather than uploaded to it. Here a file that
+arrives by any route is picked up on the next pass.
+
+**Do not run both this and a Zap** pointed at the same folder, or every new
+photo gets two rows.
+
+Still only one folder deep: the query asks for direct children, so the flat
+folder rule the library already depends on continues to apply. Subfolders are
+invisible.
+
+Requires two variables, and the folder must stay shared "anyone with the link"
+— which it already must be, or the mood board could not render Drive
+thumbnails:
+
+- `GOOGLE_DRIVE_FOLDER_ID` — from the folder's URL.
+- `GOOGLE_DRIVE_API_KEY` — a Google Cloud API key with the Drive API enabled.
+
+Without them the import step is skipped and the rest carries on unchanged.
 
 ## Airtable image library
 
@@ -172,7 +195,8 @@ in step.
 
 ## Still outstanding
 
-- Nothing creates Airtable rows from Google Drive files. See below.
+- Nothing yet verifies that the weekly cron actually fired. See the post-merge
+  check above.
 
 ## Tile images
 
