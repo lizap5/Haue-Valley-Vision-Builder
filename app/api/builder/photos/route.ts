@@ -229,6 +229,16 @@ const LINEN_COLOR_TAG_MAP: Record<string, string[]> = {
   black:        ["Black"],
 };
 
+// Colors that say nothing about a couple's linen choice, so carrying one is
+// never held against a photo. Ivory, White, Beige and Grey are on almost every
+// table; Gold and Silver are the accent metals, scored separately below; Green
+// is foliage and Brown is the barn itself, both of which are in a photograph
+// whatever the linens are. Everything else -- Terracotta, Burgundy, Emerald,
+// Teal, Navy, Blush, Purple, Black -- reads as a deliberate color decision.
+const NEUTRAL_COLOR_TAGS = new Set([
+  "Ivory", "White", "Beige", "Grey", "Gray", "Gold", "Silver", "Green", "Brown",
+]);
+
 function scoreRecord(record: AirtableRecord, state: BuilderState): number {
   let score = 0;
 
@@ -274,6 +284,19 @@ function scoreRecord(record: AirtableRecord, state: BuilderState): number {
   const colorTags = [...new Set(chosen.flatMap((c) => LINEN_COLOR_TAG_MAP[c] ?? []))];
   for (const tag of colorTags) {
     if (tags(record, "color").includes(tag)) score += 2;
+  }
+
+  // ...and -2 per statement color the couple did not choose. Rewarding matches
+  // alone is not enough to order these photos: almost every reception in the
+  // library carries Ivory and White, so a terracotta room and a blue one both
+  // scored +4 on linens and the tie fell to vibe or season. That is how a
+  // board asking for Something Blue came back showing terracotta tablecloths.
+  // Mirrors the vibe penalty above -- pushed down rather than barred, so a
+  // slot still fills when the library has nothing closer.
+  if (colorTags.length) {
+    for (const tag of tags(record, "color")) {
+      if (!NEUTRAL_COLOR_TAGS.has(tag) && !colorTags.includes(tag)) score -= 2;
+    }
   }
 
   // Accent metal: +2
