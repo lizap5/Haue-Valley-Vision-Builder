@@ -5,6 +5,7 @@ import {
   VIBES, AISLE_FLOWERS, ARCHES, LINEN_COLORS, ACCENT_METALS,
   SIGNATURE_DRINKS, CEREMONY_LOCATIONS, labelFor,
 } from "@/lib/calculator-options";
+import { stripDashes } from "@/lib/haue-valley-voice";
 
 const client = new Anthropic();
 
@@ -213,19 +214,6 @@ Then output the all-inclusive paragraph exactly as written below. Do not rewrite
 ${aiParagraph}`;
 }
 
-// The prompt forbids em dashes, and the model still produces one now and then.
-// A rule the model can miss is worth enforcing where it cannot. Every dash
-// becomes a comma: turning the spaced ones into full stops instead reads well
-// for an aside but leaves a fragment when the dash joined two clauses, and the
-// difference is not something a regular expression can tell.
-function stripDashes(text: string): string {
-  return text
-    // A dash between digits is a range (50-100 guests), not punctuation.
-    .replace(/(\d)\s*[—–]\s*(\d)/g, "$1 to $2")
-    .replace(/\s*[—–]\s*/g, ", ")
-    .replace(/\s+([,.])/g, "$1")
-    .replace(/,\s*,/g, ",");
-}
 
 function fallbackVision(state: BuilderState): { heading: string; style_name: string; vision: string; all_inclusive_paragraph: string } {
   const names = state.couple_names || "You two";

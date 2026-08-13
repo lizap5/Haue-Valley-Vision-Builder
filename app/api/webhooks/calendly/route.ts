@@ -32,7 +32,12 @@ async function findRecordByEmail(email: string): Promise<string | null> {
   return data.records?.[0]?.id ?? null;
 }
 
-async function updateAirtableRecord(recordId: string, tourDate: string, isoDateTime: string): Promise<void> {
+async function updateAirtableRecord(
+  recordId: string,
+  tourDate: string,
+  tourTime: string,
+  isoDateTime: string
+): Promise<void> {
   const res = await fetch(
     `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${TOURS_TABLE_ID}/${recordId}`,
     {
@@ -44,6 +49,7 @@ async function updateAirtableRecord(recordId: string, tourDate: string, isoDateT
       body: JSON.stringify({
         fields: {
           "Tour Date":         tourDate,
+          "Tour Time":         tourTime,
           "Tour ISO DateTime": isoDateTime,
           "Tour Status":       "Scheduled",
         },
@@ -91,8 +97,29 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "Missing email or start_time" }, { status: 400 });
     }
 
-    // Format tour date as readable string: "Saturday, June 14 at 10:00 AM"
-    const tourDate = new Date(scheduledAt).toLocaleString("en-US", {
+    // "Tour Date" is an Airtable *Date* field, not free text, and "Tour Time"
+    // is its own plain-text field alongside it — but this used to write one
+    // compound, year-less sentence ("Saturday, June 14 at 10:00 AM") into
+    // "Tour Date" alone and leave "Tour Time" blank. Airtable's typecast
+    // parses real dates, not full sentences with the time folded in, so that
+    // string wrote inconsistently (or not at all) into a Date field. Build
+    // the two pieces separately instead: an unambiguous ISO calendar date
+    // ("YYYY-MM-DD", in en-CA which formats that way) for "Tour Date", and a
+    // plain time-of-day string for "Tour Time".
+    const scheduledDate = new Date(scheduledAt);
+    const tourDate = scheduledDate.toLocaleDateString("en-CA", {
+      year:  "numeric",
+      month: "2-digit",
+      day:   "2-digit",
+      timeZone: "America/Chicago",
+    });
+    const tourTime = scheduledDate.toLocaleTimeString("en-US", {
+      hour:   "numeric",
+      minute: "2-digit",
+      timeZone: "America/Chicago",
+    });
+    // Human-readable form for logs/response only — never written to Airtable.
+    const tourDateReadable = scheduledDate.toLocaleString("en-US", {
       weekday: "long",
       month:   "long",
       day:     "numeric",
@@ -107,10 +134,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, matched: false });
     }
 
-    await updateAirtableRecord(recordId, tourDate, scheduledAt);
-    console.log(`Tour scheduled for ${name} (${email}) on ${tourDate} — Airtable record ${recordId} updated`);
+    await updateAirtableRecord(recordId, tourDate, tourTime, scheduledAt);
+    console.log(`Tour scheduled for ${name} (${email}) on ${tourDateReadable} — Airtable record ${recordId} updated`);
 
-    return NextResponse.json({ ok: true, matched: true, tourDate });
+    return NextResponse.json({ ok: true, matched: true, tourDate, tourTime });
   } catch (err) {
     console.error("Calendly webhook error:", err);
     return NextResponse.json({ ok: false, error: String(err) }, { status: 500 });

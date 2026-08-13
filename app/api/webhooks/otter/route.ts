@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "crypto";
 import Anthropic from "@anthropic-ai/sdk";
+import { HAUE_VALLEY_VOICE_GUIDE, stripDashes } from "@/lib/haue-valley-voice";
 
 const AIRTABLE_API_KEY        = process.env.AIRTABLE_API_KEY!;
 const AIRTABLE_BASE_ID        = process.env.AIRTABLE_BASE_ID!;
@@ -250,29 +251,38 @@ async function generateFollowUpDraft(
   const f = tourRecord.fields;
   const coupleNames   = (f["Couple Names"] as string) || insights.couple_names_mentioned || "there";
   const firstName     = coupleNames.split(/[&,]/)[0].trim();
-  const vibe          = (f["Vibe"] as string) || (f["Room Feeling"] as string) || "";
+  // Checked one by one against the live Tours schema. "Vibe", "Aisle Flowers",
+  // "Arch Selection", "Linen Colors", "Accent Metal" and "Signature Drinks"
+  // are not columns on that table and never have been, so those reads have
+  // returned "" since they shipped and the drafts lost the context silently.
+  // The real columns: the vibe is "Style Name", linens are "Colors Chosen",
+  // and the arch and aisle picks have no column of their own, arriving folded
+  // into "Additional Notes" as labelled lines by builder/submit.
+  const vibe          = (f["Style Name"] as string) || (f["Room Feeling"] as string) || "";
   const season        = (f["Season"] as string) || "";
   const ceremony      = (f["Ceremony Location"] as string) || "";
-  const aisle         = (f["Aisle Flowers"] as string) || "";
-  const arch          = (f["Arch Selection"] as string) || "";
-  const linens        = (f["Linen Colors"] as string) || "";
-  const metal         = (f["Accent Metal"] as string) || "";
+  const linens        = (f["Colors Chosen"] as string) || "";
   const priority      = (f["The One Thing"] as string) || "";
-  const drinks        = (f["Signature Drinks"] as string) || (f["Signature Drink"] as string) || "";
+  // "Signature Drink" is singular on Tours and is a real column, so this
+  // fallback was already working. Keep it: dropping it for "Favorite Drinks"
+  // alone would lose the drinks on any record where the singular is the one
+  // that got filled in.
+  const drinks        = (f["Favorite Drinks"] as string) || (f["Signature Drink"] as string) || "";
+  const decorNotes    = (f["Additional Notes"] as string) || "";
 
   const visionContext = [
-    vibe     && `Their chosen vibe: ${vibe}`,
-    season   && `Season: ${season}`,
-    ceremony && `Ceremony space preference before the tour: ${ceremony}`,
-    aisle    && `Aisle flowers they picked: ${aisle}`,
-    arch     && `Arch or arbor they picked: ${arch}`,
-    linens   && `Linen and napkin colors: ${linens}`,
-    metal    && `Accent metal: ${metal}`,
-    priority && `The one thing that mattered most to them: ${priority}`,
-    drinks   && `Signature drinks they chose: ${drinks}`,
+    vibe       && `Their chosen vibe: ${vibe}`,
+    season     && `Season: ${season}`,
+    ceremony   && `Ceremony space preference before the tour: ${ceremony}`,
+    linens     && `Linen and napkin colors: ${linens}`,
+    priority   && `The one thing that mattered most to them: ${priority}`,
+    drinks     && `Signature drinks they chose: ${drinks}`,
+    decorNotes && `Decor picks and notes from their vision builder submission: ${decorNotes}`,
   ].filter(Boolean).join("\n");
 
   const prompt = `You are drafting a follow-up email for Haue Valley Weddings, a private estate wedding venue in Pacific, MO. This email will be reviewed by the Haue Valley team before being sent to the couple.
+
+${HAUE_VALLEY_VOICE_GUIDE}
 
 STRICT RULES — any violation means the draft is rejected:
 - Only reference information that was explicitly discussed during the tour transcript
@@ -280,10 +290,6 @@ STRICT RULES — any violation means the draft is rejected:
 - Do not make any promises about pricing, availability, or packages
 - Do not offer or imply anything that was not discussed on the tour
 - Do not invent details, feelings, or moments not present in the transcript
-- No exclamation points
-- No words like "magical", "dream", "perfect", "stunning", "breathtaking", "unforgettable"
-- No em dashes. Use commas or periods instead.
-- Do not use the word "barn"
 - Warm but not effusive. Genuine. Like a thoughtful note from someone who just spent an hour with them.
 - Sign off as: Kristin & the Haue Valley Team
 - Plain text only — no markdown, no bullet points, no headers
@@ -320,7 +326,7 @@ Then write 1-3 brief notes for the human reviewer flagging anything they should 
   const raw = (message.content[0] as { type: string; text: string }).text.trim();
   const [emailPart, notesPart] = raw.split("---REVIEWER NOTES---");
 
-  const body    = (emailPart ?? "").trim();
+  const body    = stripDashes((emailPart ?? "").trim());
   const subject = `Thank you for touring Haue Valley, ${firstName}`;
 
   return {
