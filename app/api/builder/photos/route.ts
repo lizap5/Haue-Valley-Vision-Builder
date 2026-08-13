@@ -229,6 +229,44 @@ const LINEN_COLOR_TAG_MAP: Record<string, string[]> = {
   black:        ["Black"],
 };
 
+// Colors that say nothing about a couple's linen choice, so carrying one is
+// never held against a photo. Ivory, White, Beige and Grey are on almost every
+// table; Gold and Silver are the accent metals, scored separately below; Brown
+// is the barn itself. Everything else -- Terracotta, Burgundy, Emerald, Teal,
+// Navy, Blush, Purple, Black -- reads as a deliberate color decision.
+const NEUTRAL_COLOR_TAGS = new Set([
+  "Ivory", "White", "Beige", "Grey", "Gray", "Gold", "Silver", "Brown",
+]);
+
+// Green is the one colour that has to be judged in context. Outdoors it is the
+// trees and the lawn, in every photograph regardless of the linens, and
+// penalising it would mark down every ceremony site the venue has. Indoors it
+// is a choice someone made: a board asking for ivory and blue came back
+// showing a reception laid with chartreuse napkins, which scored clean because
+// green was exempt everywhere.
+function isNeutralColor(tag: string, indoor: boolean): boolean {
+  if (NEUTRAL_COLOR_TAGS.has(tag)) return true;
+  return tag === "Green" && !indoor;
+}
+
+// The linen colours the couple asked for, as Airtable colour tags.
+function paletteOf(state: BuilderState): string[] {
+  const chosen = state.linen_colors ?? state.colors_chosen ?? [];
+  return [...new Set(chosen.flatMap((c) => LINEN_COLOR_TAG_MAP[c] ?? []))];
+}
+
+// Statement colours a photo carries that the couple did not choose. Used both
+// to score and, for the reception slots, to reject outright: scoring alone
+// cannot fix a slot whose whole candidate pool is off-palette.
+function conflictingColors(record: AirtableRecord, state: BuilderState): string[] {
+  const palette = paletteOf(state);
+  if (!palette.length) return [];
+  const indoor = tags(record, "setting").includes("Indoor");
+  return tags(record, "color").filter(
+    (tag) => !isNeutralColor(tag, indoor) && !palette.includes(tag)
+  );
+}
+
 function scoreRecord(record: AirtableRecord, state: BuilderState): number {
   let score = 0;
 
@@ -270,11 +308,17 @@ function scoreRecord(record: AirtableRecord, state: BuilderState): number {
   if (seasonTag && tags(record, "season").includes(seasonTag)) score += 3;
 
   // Linen color tags: +2 per match
-  const chosen = state.linen_colors ?? state.colors_chosen ?? [];
-  const colorTags = [...new Set(chosen.flatMap((c) => LINEN_COLOR_TAG_MAP[c] ?? []))];
+  const colorTags = paletteOf(state);
   for (const tag of colorTags) {
     if (tags(record, "color").includes(tag)) score += 2;
   }
+
+  // ...and -2 per statement color the couple did not choose. Rewarding matches
+  // alone is not enough to order these photos: almost every reception in the
+  // library carries Ivory and White, so a terracotta room and a blue one both
+  // scored +4 on linens and the tie fell to vibe or season. That is how a
+  // board asking for Something Blue came back showing terracotta tablecloths.
+  score -= conflictingColors(record, state).length * 2;
 
   // Accent metal: +2
   if (state.accent_metal) {
@@ -443,6 +487,13 @@ export async function POST(req: NextRequest) {
     // --- Guaranteed space slots: best-scoring photo for each required space ---
     const chosenCeremonyTag = CEREMONY_LOCATION_TAG_MAP[state.ceremony_location ?? ""];
     const spacePhotos: ScoredPhoto[] = [];
+    // What the board already shows, recorded from the photo each slot actually
+    // chose rather than from the tags its slot would have accepted. The
+    // distinction matters: the Ceremony slot accepts "Fireplace Indoor", which
+    // around fifty photos carry and most of them are receptions, so treating
+    // the whole accepts list as covered blacklists a large part of the library
+    // the moment that slot fills.
+    const coveredSpaces = new Set<string>();
     for (const { slot, accepts, prefersNot } of SPACE_SLOTS) {
       const inSpace = (s: { record: AirtableRecord }) =>
         isFresh(s.record) && tags(s.record, "space").some((t) => accepts.includes(t));
@@ -470,8 +521,35 @@ export async function POST(req: NextRequest) {
         return locations.length === 0 || locations.includes(chosenCeremonyTag!);
       };
 
+      // The reception slots are the two the couple reads as "their room", and
+      // an off-palette photo in one of them is the complaint that keeps coming
+      // back: terracotta tablecloths on a board that asked for blue. Scoring
+      // cannot settle it, because the board shows two reception photos and the
+      // library may hold only one on-palette. So these slots reject outright
+      // rather than rank, and go empty when nothing matches -- the page omits
+      // a reception tile it is given no photo for. The Ceremony slot keeps its
+      // own chain below: showing a couple their actual ceremony site matters
+      // more than the linens in the shot, and it is the one slot where being
+      // absent would be worse than being imperfect.
+      const onPalette = (s: { record: AirtableRecord }) =>
+        conflictingColors(s.record, state).length === 0;
+
+      // A close-up of a table laid in their colours is a truer answer than a
+      // wide shot of a room in somebody else's. Detail shots are deprioritised
+      // for these slots normally (prefersNot above wants the whole space
+      // shown), but as the last step before an empty tile they are exactly
+      // right. Drink close-ups cannot reach here: isDrinkPhoto already keeps
+      // them out of `scored`, so this cannot answer "your reception" with a
+      // photograph of a cocktail.
+      const isDetailShot = (s: { record: AirtableRecord }) =>
+        tags(s.record, "space").includes("Detail Shot");
+
       const hit =
-        slot === "Ceremony" && chosenCeremonyTag
+        slot !== "Ceremony"
+          ? scored.find((s) => preferred(s) && onPalette(s)) ??
+            scored.find((s) => inSpace(s) && onPalette(s)) ??
+            scored.find((s) => isFresh(s.record) && isDetailShot(s) && onPalette(s))
+          : slot === "Ceremony" && chosenCeremonyTag
           ? // Their chosen site, in order of how well the photo otherwise
             // suits them, but it is shown either way. The last of these
             // searches the whole library and ignores the airy/moody filter,
@@ -487,6 +565,7 @@ export async function POST(req: NextRequest) {
 
       if (hit) {
         claim(hit.record);
+        for (const t of tags(hit.record, "space")) coveredSpaces.add(t);
         spacePhotos.push({
           id: hit.record.id,
           url: getImageUrl(hit.record)!,
@@ -509,31 +588,54 @@ export async function POST(req: NextRequest) {
       const recordVibes = tags(r, "vibe");
       return recordVibes.length === 0 || recordVibes.includes(chosenVibeTag);
     };
-    const remaining = scored.filter((s) => isFresh(s.record) && rightVibe(s.record));
+    // A style pick showing a space the board already has reads as a duplicate
+    // even when it is a genuinely different photograph: two shots of the same
+    // aisle, one in the Ceremony slot and one again below it, is what a couple
+    // sees as the same picture twice. A photo counts as somewhere new only if
+    // none of its space tags are covered -- a reception detail shot is still
+    // the reception. Photos with no space recorded are unaffected, since no
+    // space is not a repeat.
+    const showsNewSpace = (r: AirtableRecord) =>
+      !tags(r, "space").some((t) => coveredSpaces.has(t));
+    const eligible = scored.filter(
+      (s) => isFresh(s.record) && rightVibe(s.record) && showsNewSpace(s.record)
+    );
+
     const stylePicks: ScoredPhoto[] = [];
-    const indices = [0, 3, 7];
-    for (const i of indices) {
-      const s = remaining[i];
-      if (s && !stylePicks.find((p) => p.id === s.record.id)) {
-        stylePicks.push({
-          id: s.record.id,
-          url: getImageUrl(s.record)!,
-          name: (s.record.fields["Image Name"] as string) ?? s.record.id,
-          score: s.score,
-        });
-      }
+    // Each pick claims, so the key-based duplicate check applies between the
+    // style picks themselves and not only against the space slots above. The
+    // id comparison this replaced could not see that two records hold one
+    // photograph, which is the whole reason keysOf exists.
+    const takeStylePick = (s: { record: AirtableRecord; score: number }) => {
+      claim(s.record);
+      stylePicks.push({
+        id: s.record.id,
+        url: getImageUrl(s.record)!,
+        name: (s.record.fields["Image Name"] as string) ?? s.record.id,
+        score: s.score,
+      });
+    };
+    // Freshness is re-checked at pick time rather than trusted from when the
+    // list was built: an earlier pick may since have claimed this photograph.
+    const pickFrom = (pool: typeof scored, i: number) => {
+      const s = pool[i];
+      if (s && isFresh(s.record)) takeStylePick(s);
+    };
+
+    // Fixed positions in the ranking, so the three picks span the score range
+    // instead of clustering at the top, then fill from the top with whatever
+    // those positions missed.
+    for (const i of [0, 3, 7]) {
+      if (stylePicks.length < 3) pickFrom(eligible, i);
     }
-    for (let i = 0; stylePicks.length < 3 && i < remaining.length; i++) {
-      const s = remaining[i];
-      if (!stylePicks.find((p) => p.id === s.record.id)) {
-        stylePicks.push({
-          id: s.record.id,
-          url: getImageUrl(s.record)!,
-          name: (s.record.fields["Image Name"] as string) ?? s.record.id,
-          score: s.score,
-        });
-      }
+    for (let i = 0; stylePicks.length < 3 && i < eligible.length; i++) {
+      pickFrom(eligible, i);
     }
+    // Deliberately no wider fallback. When the library cannot offer three
+    // photos of somewhere the board does not already show, it returns two, or
+    // one: the page lays out whatever it is given. A shorter board reads as a
+    // deliberate edit, while the same aisle printed twice reads as broken, and
+    // padding the count was what put it there in the first place.
 
     return NextResponse.json({
       // Legacy key: first three images for anything still reading `photos`

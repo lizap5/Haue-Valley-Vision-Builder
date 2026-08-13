@@ -142,8 +142,13 @@ function MoodBoard({
       {/* Row 1: the three Haue Valley spaces */}
       <div className="grid grid-cols-3 gap-3 mb-3">
         <Cell photo={ceremony} label="Ceremony" />
-        <Cell photo={reception} label="Reception" />
-        <Cell photo={receptionSpace} label="The Space" />
+        {/* The reception slots go empty when the library holds no photo in the
+            couple's linen colours, so render nothing rather than a "coming
+            soon" card. A tile that is not there reads as a shorter board; a
+            tile announcing a gap reads as unfinished, and the photo it stands
+            in for is one we chose not to show. */}
+        {reception && <Cell photo={reception} label="Reception" />}
+        {receptionSpace && <Cell photo={receptionSpace} label="The Space" />}
       </div>
 
       {/* Row 2: style photos + swatch/metal cards */}
@@ -405,7 +410,18 @@ export default function ResultPage() {
           {/* Mood board */}
           <MoodBoard
             spacePhotos={photoData.spacePhotos}
-            stylePhotos={photoData.stylePhotos.length ? photoData.stylePhotos : photoData.photos}
+            // The legacy `photos` key is the space photos followed by the style
+            // picks, so falling back to it whole reprints every space photo the
+            // board is already showing. That fallback is only for a response
+            // with no stylePhotos at all; an empty list is now a real answer,
+            // meaning the library had nothing left that isn't already up there.
+            stylePhotos={
+              photoData.stylePhotos.length
+                ? photoData.stylePhotos
+                : photoData.photos.filter(
+                    (p) => !photoData.spacePhotos.some((s) => s.id === p.id)
+                  )
+            }
             linenColors={localState.linen_colors ?? []}
             accentMetal={localState.accent_metal}
           />
