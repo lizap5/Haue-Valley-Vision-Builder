@@ -231,13 +231,23 @@ const LINEN_COLOR_TAG_MAP: Record<string, string[]> = {
 
 // Colors that say nothing about a couple's linen choice, so carrying one is
 // never held against a photo. Ivory, White, Beige and Grey are on almost every
-// table; Gold and Silver are the accent metals, scored separately below; Green
-// is foliage and Brown is the barn itself, both of which are in a photograph
-// whatever the linens are. Everything else -- Terracotta, Burgundy, Emerald,
-// Teal, Navy, Blush, Purple, Black -- reads as a deliberate color decision.
+// table; Gold and Silver are the accent metals, scored separately below; Brown
+// is the barn itself. Everything else -- Terracotta, Burgundy, Emerald, Teal,
+// Navy, Blush, Purple, Black -- reads as a deliberate color decision.
 const NEUTRAL_COLOR_TAGS = new Set([
-  "Ivory", "White", "Beige", "Grey", "Gray", "Gold", "Silver", "Green", "Brown",
+  "Ivory", "White", "Beige", "Grey", "Gray", "Gold", "Silver", "Brown",
 ]);
+
+// Green is the one colour that has to be judged in context. Outdoors it is the
+// trees and the lawn, in every photograph regardless of the linens, and
+// penalising it would mark down every ceremony site the venue has. Indoors it
+// is a choice someone made: a board asking for ivory and blue came back
+// showing a reception laid with chartreuse napkins, which scored clean because
+// green was exempt everywhere.
+function isNeutralColor(tag: string, indoor: boolean): boolean {
+  if (NEUTRAL_COLOR_TAGS.has(tag)) return true;
+  return tag === "Green" && !indoor;
+}
 
 function scoreRecord(record: AirtableRecord, state: BuilderState): number {
   let score = 0;
@@ -294,8 +304,9 @@ function scoreRecord(record: AirtableRecord, state: BuilderState): number {
   // Mirrors the vibe penalty above -- pushed down rather than barred, so a
   // slot still fills when the library has nothing closer.
   if (colorTags.length) {
+    const indoor = tags(record, "setting").includes("Indoor");
     for (const tag of tags(record, "color")) {
-      if (!NEUTRAL_COLOR_TAGS.has(tag) && !colorTags.includes(tag)) score -= 2;
+      if (!isNeutralColor(tag, indoor) && !colorTags.includes(tag)) score -= 2;
     }
   }
 

@@ -25,6 +25,16 @@ const PRIORITY_LABELS: Record<string, string> = {
   all_inclusive: "Everything handled, start to finish",
 };
 
+// The model describes what it is given. Handed a bare "The Forest View" it has
+// no way to know that is a stand of trees rather than a hall, and it wrote that
+// the couple's guests "gather in a room". Two of the three sites are outdoors,
+// so the setting travels with the name.
+const CEREMONY_SETTING: Record<string, string> = {
+  stone_wall:  "outdoors, open sky above",
+  forest_view: "outdoors, under a canopy of trees",
+  fireplace:   "indoors, at the fireplace",
+};
+
 function buildPrompt(state: BuilderState): string {
   const names = state.couple_names || "this couple";
   const guestLabel =
@@ -143,7 +153,7 @@ THEIR SELECTIONS:
 - Guest count: ${guestLabel}
 - Season: ${SEASON_LABELS[state.season ?? "unsure"] ?? "Not specified"}
 - Wedding date (typed by couple): ${state.wedding_date || "Not provided"}
-- Ceremony location: ${labelFor(CEREMONY_LOCATIONS, state.ceremony_location) || "Not yet decided"}
+- Ceremony location: ${labelFor(CEREMONY_LOCATIONS, state.ceremony_location) || "Not yet decided"}${CEREMONY_SETTING[state.ceremony_location ?? ""] ? ` (${CEREMONY_SETTING[state.ceremony_location ?? ""]})` : ""}
 - Aisle flowers: ${labelFor(AISLE_FLOWERS, state.aisle_flowers) || "Not yet decided"}
 - Arch or arbor: ${labelFor(ARCHES, state.arch_selection) || "Not yet decided"}
 - Linen and napkin colors: ${linens}
@@ -157,7 +167,9 @@ If the couple provided a specific wedding date or month, use that exact timefram
 
 STRUCTURE. Three to five short paragraphs, in this order.
 
-Open with their day as they have designed it. Where the ceremony sits, how the space will look, who is in the room. Do not list their answers back; a list reads as a receipt. Describe the room those choices add up to, in one or two sentences.
+Open with their day as they have designed it. Where the ceremony sits, how the space will look, who is there. Do not list their answers back; a list reads as a receipt. Describe what those choices add up to, in one or two sentences.
+
+The ceremony and the reception are not the same place unless they chose The Fireplace. Two of the three ceremony sites are outdoors, and the setting is given with their ceremony location above. Never call an outdoor ceremony a room, never put its guests indoors, and do not run the two places together in one sentence as though the couple walked from one into the other without going outside. "Your ceremony sits in the Forest View. Around you, over two hundred guests gather in a room dressed in ivory and light blue" is the exact mistake: the Forest View is a canopy of trees, and that sentence puts a roof on it.
 
 Then the observation only someone who knows this building could offer. One paragraph, one idea.
 
