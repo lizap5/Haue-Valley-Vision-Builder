@@ -142,8 +142,13 @@ function MoodBoard({
       {/* Row 1: the three Haue Valley spaces */}
       <div className="grid grid-cols-3 gap-3 mb-3">
         <Cell photo={ceremony} label="Ceremony" />
-        <Cell photo={reception} label="Reception" />
-        <Cell photo={receptionSpace} label="The Space" />
+        {/* The reception slots go empty when the library holds no photo in the
+            couple's linen colours, so render nothing rather than a "coming
+            soon" card. A tile that is not there reads as a shorter board; a
+            tile announcing a gap reads as unfinished, and the photo it stands
+            in for is one we chose not to show. */}
+        {reception && <Cell photo={reception} label="Reception" />}
+        {receptionSpace && <Cell photo={receptionSpace} label="The Space" />}
       </div>
 
       {/* Row 2: style photos + swatch/metal cards */}

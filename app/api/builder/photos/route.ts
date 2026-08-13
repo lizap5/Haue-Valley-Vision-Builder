@@ -249,6 +249,24 @@ function isNeutralColor(tag: string, indoor: boolean): boolean {
   return tag === "Green" && !indoor;
 }
 
+// The linen colours the couple asked for, as Airtable colour tags.
+function paletteOf(state: BuilderState): string[] {
+  const chosen = state.linen_colors ?? state.colors_chosen ?? [];
+  return [...new Set(chosen.flatMap((c) => LINEN_COLOR_TAG_MAP[c] ?? []))];
+}
+
+// Statement colours a photo carries that the couple did not choose. Used both
+// to score and, for the reception slots, to reject outright: scoring alone
+// cannot fix a slot whose whole candidate pool is off-palette.
+function conflictingColors(record: AirtableRecord, state: BuilderState): string[] {
+  const palette = paletteOf(state);
+  if (!palette.length) return [];
+  const indoor = tags(record, "setting").includes("Indoor");
+  return tags(record, "color").filter(
+    (tag) => !isNeutralColor(tag, indoor) && !palette.includes(tag)
+  );
+}
+
 function scoreRecord(record: AirtableRecord, state: BuilderState): number {
   let score = 0;
 
@@ -290,8 +308,7 @@ function scoreRecord(record: AirtableRecord, state: BuilderState): number {
   if (seasonTag && tags(record, "season").includes(seasonTag)) score += 3;
 
   // Linen color tags: +2 per match
-  const chosen = state.linen_colors ?? state.colors_chosen ?? [];
-  const colorTags = [...new Set(chosen.flatMap((c) => LINEN_COLOR_TAG_MAP[c] ?? []))];
+  const colorTags = paletteOf(state);
   for (const tag of colorTags) {
     if (tags(record, "color").includes(tag)) score += 2;
   }
@@ -301,14 +318,7 @@ function scoreRecord(record: AirtableRecord, state: BuilderState): number {
   // library carries Ivory and White, so a terracotta room and a blue one both
   // scored +4 on linens and the tie fell to vibe or season. That is how a
   // board asking for Something Blue came back showing terracotta tablecloths.
-  // Mirrors the vibe penalty above -- pushed down rather than barred, so a
-  // slot still fills when the library has nothing closer.
-  if (colorTags.length) {
-    const indoor = tags(record, "setting").includes("Indoor");
-    for (const tag of tags(record, "color")) {
-      if (!isNeutralColor(tag, indoor) && !colorTags.includes(tag)) score -= 2;
-    }
-  }
+  score -= conflictingColors(record, state).length * 2;
 
   // Accent metal: +2
   if (state.accent_metal) {
@@ -511,8 +521,35 @@ export async function POST(req: NextRequest) {
         return locations.length === 0 || locations.includes(chosenCeremonyTag!);
       };
 
+      // The reception slots are the two the couple reads as "their room", and
+      // an off-palette photo in one of them is the complaint that keeps coming
+      // back: terracotta tablecloths on a board that asked for blue. Scoring
+      // cannot settle it, because the board shows two reception photos and the
+      // library may hold only one on-palette. So these slots reject outright
+      // rather than rank, and go empty when nothing matches -- the page omits
+      // a reception tile it is given no photo for. The Ceremony slot keeps its
+      // own chain below: showing a couple their actual ceremony site matters
+      // more than the linens in the shot, and it is the one slot where being
+      // absent would be worse than being imperfect.
+      const onPalette = (s: { record: AirtableRecord }) =>
+        conflictingColors(s.record, state).length === 0;
+
+      // A close-up of a table laid in their colours is a truer answer than a
+      // wide shot of a room in somebody else's. Detail shots are deprioritised
+      // for these slots normally (prefersNot above wants the whole space
+      // shown), but as the last step before an empty tile they are exactly
+      // right. Drink close-ups cannot reach here: isDrinkPhoto already keeps
+      // them out of `scored`, so this cannot answer "your reception" with a
+      // photograph of a cocktail.
+      const isDetailShot = (s: { record: AirtableRecord }) =>
+        tags(s.record, "space").includes("Detail Shot");
+
       const hit =
-        slot === "Ceremony" && chosenCeremonyTag
+        slot !== "Ceremony"
+          ? scored.find((s) => preferred(s) && onPalette(s)) ??
+            scored.find((s) => inSpace(s) && onPalette(s)) ??
+            scored.find((s) => isFresh(s.record) && isDetailShot(s) && onPalette(s))
+          : slot === "Ceremony" && chosenCeremonyTag
           ? // Their chosen site, in order of how well the photo otherwise
             // suits them, but it is shown either way. The last of these
             // searches the whole library and ignores the airy/moody filter,
