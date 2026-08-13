@@ -509,30 +509,61 @@ export async function POST(req: NextRequest) {
       const recordVibes = tags(r, "vibe");
       return recordVibes.length === 0 || recordVibes.includes(chosenVibeTag);
     };
-    const remaining = scored.filter((s) => isFresh(s.record) && rightVibe(s.record));
+    const candidates = scored.filter((s) => isFresh(s.record) && rightVibe(s.record));
+
+    // The spaces the slots above already put on the board. A style pick showing
+    // one of them again reads as a duplicate even when it is a genuinely
+    // different photograph: two shots of the same aisle, one in the Ceremony
+    // slot and one again below it, is what a couple sees as the same picture
+    // twice. Only slots that actually filled contribute, so an empty slot does
+    // not bar its own space from the picks.
+    const coveredSpaces = new Set<string>(
+      SPACE_SLOTS
+        .filter(({ slot }) => spacePhotos.some((p) => p.space === slot))
+        .flatMap(({ accepts }) => accepts)
+    );
+    // A photo counts as somewhere new only if none of its space tags are
+    // already covered: a reception detail shot is still the reception. Photos
+    // with no space recorded are unaffected, since no space is not a repeat.
+    const showsNewSpace = (r: AirtableRecord) =>
+      !tags(r, "space").some((t) => coveredSpaces.has(t));
+    const elsewhere = candidates.filter((s) => showsNewSpace(s.record));
+
     const stylePicks: ScoredPhoto[] = [];
-    const indices = [0, 3, 7];
-    for (const i of indices) {
-      const s = remaining[i];
-      if (s && !stylePicks.find((p) => p.id === s.record.id)) {
-        stylePicks.push({
-          id: s.record.id,
-          url: getImageUrl(s.record)!,
-          name: (s.record.fields["Image Name"] as string) ?? s.record.id,
-          score: s.score,
-        });
-      }
+    // Each pick claims, so the key-based duplicate check applies between the
+    // style picks themselves and not only against the space slots above. The
+    // id comparison this replaced could not see that two records hold one
+    // photograph, which is the whole reason keysOf exists.
+    const takeStylePick = (s: { record: AirtableRecord; score: number }) => {
+      claim(s.record);
+      stylePicks.push({
+        id: s.record.id,
+        url: getImageUrl(s.record)!,
+        name: (s.record.fields["Image Name"] as string) ?? s.record.id,
+        score: s.score,
+      });
+    };
+    // Freshness is re-checked at pick time rather than trusted from when the
+    // list was built: an earlier pick may since have claimed this photograph.
+    const pickFrom = (pool: typeof scored, i: number) => {
+      const s = pool[i];
+      if (s && isFresh(s.record)) takeStylePick(s);
+    };
+
+    // Fixed positions in the ranking, so the three picks span the score range
+    // instead of clustering at the top.
+    for (const i of [0, 3, 7]) {
+      if (stylePicks.length < 3) pickFrom(elsewhere, i);
     }
-    for (let i = 0; stylePicks.length < 3 && i < remaining.length; i++) {
-      const s = remaining[i];
-      if (!stylePicks.find((p) => p.id === s.record.id)) {
-        stylePicks.push({
-          id: s.record.id,
-          url: getImageUrl(s.record)!,
-          name: (s.record.fields["Image Name"] as string) ?? s.record.id,
-          score: s.score,
-        });
-      }
+    // Then anything else showing a new space, and only then photos of a space
+    // already on the board. A strong photo of the ceremony is passed over for a
+    // weaker one of somewhere else, but the board is never left short: with a
+    // small library every remaining candidate may repeat a covered space.
+    for (let i = 0; stylePicks.length < 3 && i < elsewhere.length; i++) {
+      pickFrom(elsewhere, i);
+    }
+    for (let i = 0; stylePicks.length < 3 && i < candidates.length; i++) {
+      pickFrom(candidates, i);
     }
 
     return NextResponse.json({
